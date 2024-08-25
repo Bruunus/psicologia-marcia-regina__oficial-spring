@@ -32,7 +32,7 @@ public class UsuarioService implements UserDetailsService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 	
 	 
-	private Usuario usuario;
+	 
 
 	
 	public boolean registrarUsuario(Usuario user) {

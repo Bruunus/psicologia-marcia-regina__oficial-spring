@@ -19,8 +19,14 @@ import br.com.psicologia.marcia.service.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
+@RequestMapping("/")
 public class ControllerLogin {
 
+	@Autowired
+	private AuthenticationManager manager;
+	
+	@Autowired
+	private TokenService tokenService;
 	
 	@Autowired
 	private UsuarioService userService;
@@ -29,11 +35,33 @@ public class ControllerLogin {
 	private Usuario usuario;
 	
 	
+	
+	
+	@SuppressWarnings("rawtypes")
+//	@RequestMapping(value = "/login", method = RequestMethod.POST)
+	@PostMapping("login")
+	public ResponseEntity login(@Valid @RequestBody Usuario dados) {		 
+		try {			
+            var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
+            var autenticacao = manager.authenticate(autenticacaoToken);
+            System.out.println(autenticacao);
+            
+            var tokenJWT =  tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
+            return ResponseEntity.ok(new DadosTokenJWT(tokenJWT)) ;
+            
+        } catch (Exception e) {
+        	e.getMessage();
+        	e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+		
+	}
+	
 	 
 	
 	
 	
-	@PostMapping("/register")
+	@PostMapping("register")
     public ResponseEntity<?> registerUser(@RequestBody Usuario user) {
 		
 		boolean registrarUsuario = userService.registrarUsuario(user);

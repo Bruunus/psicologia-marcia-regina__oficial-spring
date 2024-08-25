@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.JWT;
+package br.com.psicologia.marcia.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +18,6 @@ public class SecurityConfigurations {
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
-	            .csrf(csrf -> csrf.disable())
 	            .authorizeHttpRequests(auth -> auth
 	                .requestMatchers("/login").permitAll()
 	                .requestMatchers("/register").permitAll()                
@@ -30,7 +29,7 @@ public class SecurityConfigurations {
 	            )
 	            .logout(logout -> logout
 	                .permitAll()
-	            ).build();         
+	            ).csrf(csrf -> csrf.disable()).build();         
     }
 
 	@Bean
