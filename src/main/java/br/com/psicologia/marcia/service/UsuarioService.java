@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -56,8 +58,27 @@ public class UsuarioService implements UserDetailsService {
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		
-		return userRepository.findBylogin(username);		
+		System.out.println("LOGIN RECEBIDO: " +username);
 		
+		UserDetails findBylogin = userRepository.findBylogin(username);
+		
+		if(findBylogin == null) {
+			System.out.println("O valor está nulo");
+			throw new UsernameNotFoundException("Entrando em Exception -> HttpRequestMethodNotSupportedException: " + username);
+			 
+		} else {
+			return findBylogin;
+		}
+		
+		
+
+		
+	}
+	
+	
+	@Bean
+	AuthenticationManager authenticationManager (AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
 	}
 	
 	

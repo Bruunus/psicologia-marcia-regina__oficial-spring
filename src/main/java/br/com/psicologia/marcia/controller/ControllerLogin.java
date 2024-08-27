@@ -5,21 +5,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.DadosTokenJWT;
 import br.com.psicologia.marcia.JWT.TokenService;
-import br.com.psicologia.marcia.model.DadosAutenticacao;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.service.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ControllerLogin {
 
 	@Autowired
@@ -40,8 +40,10 @@ public class ControllerLogin {
 	@SuppressWarnings("rawtypes")
 //	@RequestMapping(value = "/login", method = RequestMethod.POST)
 	@PostMapping("login")
-	public ResponseEntity login(@Valid @RequestBody Usuario dados) {		 
-		try {			
+	
+	public ResponseEntity login(@Valid @RequestBody Usuario dados) {	
+		try {
+			System.out.println("Dados da request: Login: "+dados.getLogin()+"  Senha: "+ dados.getSenha());
             var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
             var autenticacao = manager.authenticate(autenticacaoToken);
             System.out.println(autenticacao);
@@ -63,6 +65,8 @@ public class ControllerLogin {
 	
 	@PostMapping("register")
     public ResponseEntity<?> registerUser(@RequestBody Usuario user) {
+		
+		System.out.println(user);
 		
 		boolean registrarUsuario = userService.registrarUsuario(user);
 		

@@ -11,15 +11,19 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class Usuario implements UserDetails {
 
 	
+	private static final long serialVersionUID = 1L;
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;	
+	@NotNull
 	private String login;
+	@NotNull
 	private String senha;
 	
 	
@@ -85,6 +89,13 @@ public class Usuario implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+    
+    
+    @Override
+    public String toString() {
+    	// TODO Auto-generated method stub
+    	return "Login: "+this.login+" "+"Senha: "+this.senha;
     }
 	
 	
