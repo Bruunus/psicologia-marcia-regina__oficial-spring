@@ -39,17 +39,22 @@ public class ControllerLogin {
 	
 	@SuppressWarnings("rawtypes")
 //	@RequestMapping(value = "/login", method = RequestMethod.POST)
-	@PostMapping("login")
-	
+	@PostMapping("login")	
 	public ResponseEntity login(@Valid @RequestBody Usuario dados) {	
 		try {
-			System.out.println("Dados da request: Login: "+dados.getLogin()+"  Senha: "+ dados.getSenha());
+//			System.out.println("Dados da request: Login: "+dados.getLogin()+"  Senha: "+ dados.getSenha());		//{Debug}\\
             var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
             var autenticacao = manager.authenticate(autenticacaoToken);
-            System.out.println(autenticacao);
+//            System.out.println(autenticacao);	 //{Debug}\\
             
             var tokenJWT =  tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
-            return ResponseEntity.ok(new DadosTokenJWT(tokenJWT)) ;
+            var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
+            
+//            System.out.println("Valores a serem enviados: ");		//{Debug}\\
+//            System.out.println("token: "+tokenJWT);				//{Debug}\\
+//            System.out.println("usuário: "+nomeUsuario);			//{Debug}\\
+            
+            return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario)) ;
             
         } catch (Exception e) {
         	e.getMessage();
@@ -58,6 +63,7 @@ public class ControllerLogin {
         }
 		
 	}
+	
 	
 	 
 	
@@ -77,5 +83,12 @@ public class ControllerLogin {
 		}
 		
     }
+	
+	
+	@PostMapping("session_timer")
+	public ResponseEntity<?> encerrarSessao(@RequestBody Sessao sessao) {
+		
+	}
+	
 	
 }
