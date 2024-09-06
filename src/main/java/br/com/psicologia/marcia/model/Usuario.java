@@ -7,10 +7,14 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotNull;
 
 @Entity
@@ -25,6 +29,10 @@ public class Usuario implements UserDetails {
 	private String login;
 	@NotNull
 	private String senha;
+	
+//	@OneToOne(mappedBy = "usuario")
+//	private AccessUserManager accessUserManager;
+	
 	
 	
 	public Long getId() {

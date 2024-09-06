@@ -1,13 +1,10 @@
 package br.com.psicologia.marcia.service;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,7 +14,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.repository.UserAccessRepository;
 import br.com.psicologia.marcia.repository.UsuarioRepository;
 
 @Configuration
@@ -33,6 +32,9 @@ public class UsuarioService implements UserDetailsService {
 	@Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 	
+	@Autowired
+	private UserAccessRepository userAccessRepository;
+	
 	 
 	 
 
@@ -45,6 +47,13 @@ public class UsuarioService implements UserDetailsService {
         	
         	user.setSenha(bCryptPasswordEncoder.encode(user.getPassword()));
         	userRepository.save(user);
+        	
+        	AccessUserManager usuarioGerenciavel = new AccessUserManager();
+        	usuarioGerenciavel.setNome(user.getLogin());
+        	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
+//        	usuarioGerenciavel.setTime_stamp(LocalDateTime.now());
+        	userAccessRepository.save(usuarioGerenciavel);
+        	
         	return false;
         }
 		
@@ -68,17 +77,36 @@ public class UsuarioService implements UserDetailsService {
 			 
 		} else {
 			return findBylogin;
-		}
-		
-		
-
-		
+		}		
 	}
 	
 	
 	@Bean
 	AuthenticationManager authenticationManager (AuthenticationConfiguration configuration) throws Exception {
 		return configuration.getAuthenticationManager();
+	}
+	
+	
+	public boolean verificarStatusAutenticacao(String usuarioLogin) {
+		// procura o usuario no banco de dados com base na coluna status_login
+		Boolean verificarUsuarioLogado = userAccessRepository.statusLoginUsuario(usuarioLogin);
+		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
+		
+		if(verificarUsuarioLogado) {			
+			System.out.println("Ja existe um usuário logado");
+			
+			// se caso ja for true então retorna erro	
+			return true;
+		} else {
+			// verifica se é false = 0 ---->>> se for então então pode atualizar pra 1 e retorna true 
+			System.out.println("Esse usuário está logado agora !");			
+			userAccessRepository.updateAcessoDeUsuario(usuarioLogin,true,LocalDateTime.now());
+			
+			return false;
+		}
+		
+		
+		
 	}
 	
 	
