@@ -6,12 +6,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.DTO.DadosTokenJWT;
 import br.com.psicologia.marcia.JWT.TokenService;
 import br.com.psicologia.marcia.model.Usuario;
@@ -58,7 +58,8 @@ public class ControllerLogin {
 	            	boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
 	            	
 	            	if(verificarAutenticacao) {
-	        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+	        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+	        					.body("Já existe um usuário logado nesta conta, acesso negado.");
 	        		} else {	            	
 	            	
 		                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
@@ -83,14 +84,15 @@ public class ControllerLogin {
 		
 	}
 	
+
 	
-	@PostMapping("logout")
-	public ResponseEntity<?> deslogarUsuario(@RequestBody String user) {
-		// verificar se esse nome da string existe no banco de dados
-		
-		// faz a chamada na service para deslogar o usuário fazendo update para "0 = false"
-		
-		return ResponseEntity.ok("Usuário deslogado!");
+	
+	@PostMapping("deslogar")
+	public ResponseEntity<?> deslogar(@RequestBody AccessUserManagerRecord usuario) {
+		String login = usuario.login();
+		System.out.println("Usuario que chegou no controller: "+login);
+		userService.deslogar(login);
+		return ResponseEntity.ok("Usuário deslogado !");
 	}
 	
 	
@@ -100,6 +102,9 @@ public class ControllerLogin {
 	@PostMapping("status-login")
 	public boolean statusDeAutenticacaoDeUsuario(@RequestBody String usuario) {
 		// verificar no banco esse nome e busco pelo status do login e retorne bolean
+		// se o usuário estiver logado retorna true e uma mensagem ResponseEntity
+//		"Já existe um usuário logado nesta conta, acesso negado." - erro 401 - HttpStatus.UNAUTHORIZED
+		
 		
 		// faz a chamada na service para deslogar o usuário fazendo update para "0 = false"
 		

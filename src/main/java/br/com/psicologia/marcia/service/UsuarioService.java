@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.UserAccessRepository;
@@ -93,20 +94,37 @@ public class UsuarioService implements UserDetailsService {
 		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
 		
 		if(verificarUsuarioLogado) {			
-			System.out.println("Ja existe um usuário logado");
+			System.err.println("Ja existe um usuário logado");
 			
 			// se caso ja for true então retorna erro	
 			return true;
 		} else {
 			// verifica se é false = 0 ---->>> se for então então pode atualizar pra 1 e retorna true 
 			System.out.println("Esse usuário está logado agora !");			
-			userAccessRepository.updateAcessoDeUsuario(usuarioLogin,true,LocalDateTime.now());
+			userAccessRepository.updateAcessoDeUsuario(
+					usuarioLogin,
+					true,
+					LocalDateTime.now());
 			
 			return false;
 		}
 		
 		
 		
+	}
+
+
+	public void deslogar(String usuarioRequest) {
+		
+		
+//		String user = usuario.login();		 
+		AccessUserManager findByNome = userAccessRepository.findByNome(usuarioRequest);
+		String usuario = findByNome.getNome();
+		userAccessRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());
+		
+		
+		
+//		System.out.println("Usário que vai se deslogar: "+usuario);
 	}
 	
 	

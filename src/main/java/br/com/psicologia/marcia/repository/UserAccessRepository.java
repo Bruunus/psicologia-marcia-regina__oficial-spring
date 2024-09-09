@@ -26,14 +26,24 @@ public interface UserAccessRepository extends JpaRepository<AccessUserManager, L
 	
 	@Transactional
     @Modifying
-    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  timestamp = :timestamp "
+    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_login = :ultimo_login "
     		+ "WHERE nome = :nome ", nativeQuery = true)
 	void updateAcessoDeUsuario(
 			@Param("nome") String nome, 
 			@Param("status_login") Boolean status_login, 
-			@Param("timestamp") LocalDateTime timestamp
+			@Param("ultimo_login") LocalDateTime ultimo_login
 			);
 
+	
+	@Transactional
+    @Modifying
+    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_logout = :ultimo_logout "
+    		+ "WHERE nome = :nome ", nativeQuery = true)
+	void updateLogoffDeUsuario(
+			@Param("nome") String nome, 
+			@Param("status_login") Boolean status_login, 
+			@Param("ultimo_logout") LocalDateTime ultimo_logout
+			);
 	 
 
  

@@ -66,14 +66,8 @@
 			<version>4.2.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.example</groupId>
-			<artifactId>teste_spring_security_e_session</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>com.example</groupId>
-			<artifactId>teste_spring_security__JWT</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 	</dependencies>
 

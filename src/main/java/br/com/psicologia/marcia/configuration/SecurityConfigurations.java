@@ -1,22 +1,27 @@
 package br.com.psicologia.marcia.configuration;
 
-import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfigurations {
 
+//	Configuração de logout
+//	@Autowired
+//    @Lazy
+//	private UsuarioService userService;
+	
+//	@Autowired
+//	public void setUserService(UsuarioService userService) {
+//        this.userService = userService;
+//    }
 
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -25,8 +30,20 @@ public class SecurityConfigurations {
 				.cors(cors -> cors.disable())
 	            .authorizeHttpRequests(auth -> auth
 	                .requestMatchers("/login").permitAll()
-	                .requestMatchers("/register").permitAll()                
+	                .requestMatchers("/register").permitAll()  
+	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
 	                .anyRequest().authenticated()
+                
+//	            ).logout(logout -> logout
+//	                    .logoutUrl("/logout")
+//	                    .addLogoutHandler((request, response, authentication) -> {
+//	                    	String login = request.getParameter("login");
+//	                        System.out.println(login);
+////	                        userService.deslogar(login);
+//	                    })
+//	                    .logoutSuccessHandler((request, response, authentication) -> {
+//	                        response.setStatus(HttpServletResponse.SC_OK);
+//	                    })
 	            ).build();
 				       
     }

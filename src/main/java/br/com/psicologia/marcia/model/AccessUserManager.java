@@ -2,15 +2,11 @@ package br.com.psicologia.marcia.model;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -26,8 +22,13 @@ public class AccessUserManager {
 	
 	private Boolean statusLogin;
 	
-	@Column(name = "timestamp")
-	private LocalDateTime time_stamp;
+	@Column(name = "ultimo_login")
+	private LocalDateTime ultimo_login;
+	
+	@Column(name = "ultimo_logout")
+	private LocalDateTime ultimo_logout;
+	
+	
 	
 	
 //	@OneToOne
@@ -60,19 +61,27 @@ public class AccessUserManager {
 		this.statusLogin = logado;
 	}
 
-	public LocalDateTime getTime_stamp() {
-		return time_stamp;
+	public LocalDateTime getUltimo_login() {
+		return ultimo_login;
 	}
 
-	public void setTime_stamp(LocalDateTime time_stamp) {
-		this.time_stamp = time_stamp;
+	public void setUltimo_login(LocalDateTime ultimo_logout) {
+		this.ultimo_login = ultimo_logout;
+	}
+	
+	public LocalDateTime getUltimo_logout() {
+		return ultimo_logout;
+	}
+
+	public void setUltimo_logout(LocalDateTime ultimo_logout) {
+		this.ultimo_logout = ultimo_logout;
 	}
 	
 	
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return this.nome+" "+this.statusLogin+" "+this.time_stamp;
+		return this.nome+" "+this.statusLogin+" "+this.ultimo_login+" "+this.ultimo_logout;
 	}
 	
 	
