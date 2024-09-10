@@ -93,7 +93,7 @@ public class UsuarioService implements UserDetailsService {
 		Boolean verificarUsuarioLogado = userAccessRepository.statusLoginUsuario(usuarioLogin);
 		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
 		
-		if(verificarUsuarioLogado) {			
+		if(verificarUsuarioLogado) {	
 			System.err.println("Ja existe um usuário logado");
 			
 			// se caso ja for true então retorna erro	
@@ -109,7 +109,22 @@ public class UsuarioService implements UserDetailsService {
 			return false;
 		}
 		
-		
+	}
+	
+	
+	/**
+	 * O objetivo principal dessa service é apenas verificar o status do login na base de dados
+	 * @param login
+	 * @return
+	 */
+	public boolean statusLogin(AccessUserManagerRecord loginHttp) {
+		String login = loginHttp.login();
+		Boolean statusLogin = userAccessRepository.statusLoginUsuario(login);
+		if(statusLogin) {
+			return true;
+		} else {
+			return false;
+		}
 		
 	}
 

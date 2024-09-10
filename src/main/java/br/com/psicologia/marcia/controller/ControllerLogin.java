@@ -100,15 +100,19 @@ public class ControllerLogin {
 	
 	
 	@PostMapping("status-login")
-	public boolean statusDeAutenticacaoDeUsuario(@RequestBody String usuario) {
+	public ResponseEntity<?> statusDeAutenticacaoDeUsuario(@RequestBody AccessUserManagerRecord usuario) {
 		// verificar no banco esse nome e busco pelo status do login e retorne bolean
-		// se o usuário estiver logado retorna true e uma mensagem ResponseEntity
-//		"Já existe um usuário logado nesta conta, acesso negado." - erro 401 - HttpStatus.UNAUTHORIZED
-		
-		
-		// faz a chamada na service para deslogar o usuário fazendo update para "0 = false"
-		
-		return true;
+		System.out.println("Valor do request: "+usuario);
+		boolean statusLogin = userService.statusLogin(usuario);
+		if(statusLogin) {
+			System.err.println("O usuário já está logado");
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+					.body("Já existe um usuário logado nesta conta, acesso negado.");
+		} else {
+			System.out.println("Usuário não está logado");
+			return ResponseEntity.status(HttpStatus.OK).build();
+		}
+		 
 	}
 	
 	 

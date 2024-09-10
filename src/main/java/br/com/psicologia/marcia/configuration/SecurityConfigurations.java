@@ -32,6 +32,7 @@ public class SecurityConfigurations {
 	                .requestMatchers("/login").permitAll()
 	                .requestMatchers("/register").permitAll()  
 	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
+	                .requestMatchers("/status-login").permitAll()
 	                .anyRequest().authenticated()
                 
 //	            ).logout(logout -> logout
