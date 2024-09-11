@@ -92,7 +92,7 @@ public class ControllerLogin {
 		String login = usuario.login();
 		System.out.println("Usuario que chegou no controller: "+login);
 		userService.deslogar(login);
-		return ResponseEntity.ok("Usuário deslogado !");
+		return ResponseEntity.ok("{\"message\": \"Usuário deslogado !\"}");
 	}
 	
 	
