@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.controller;
+package br.com.psicologia.marcia.controller.login;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.repository;
+package br.com.psicologia.marcia.repository.usuario;
 
 import java.time.LocalDateTime;
 

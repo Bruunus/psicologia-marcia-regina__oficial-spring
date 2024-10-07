@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.repository;
+package br.com.psicologia.marcia.repository.usuario;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.service;
+package br.com.psicologia.marcia.service.usuario;
 
 import java.time.LocalDateTime;
 
@@ -17,8 +17,8 @@ import org.springframework.stereotype.Service;
 import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
-import br.com.psicologia.marcia.repository.UserAccessRepository;
-import br.com.psicologia.marcia.repository.UsuarioRepository;
+import br.com.psicologia.marcia.repository.usuario.UserAccessRepository;
+import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
 
 @Configuration
 @Service
