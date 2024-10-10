@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
+import br.com.psicologia.marcia.controller.login.ControllerLogin;
 import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.UserAccessRepository;
@@ -35,6 +36,8 @@ public class UsuarioService implements UserDetailsService {
 	
 	@Autowired
 	private UserAccessRepository userAccessRepository;
+	
+	private static Usuario usuario = new Usuario();
 	
 	 
 	 
@@ -69,6 +72,7 @@ public class UsuarioService implements UserDetailsService {
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		
 		System.out.println("LOGIN RECEBIDO: " +username);
+		UsuarioService.usuario.setLogin(username);
 		
 		UserDetails findBylogin = userRepository.findBylogin(username);
 		
@@ -127,6 +131,39 @@ public class UsuarioService implements UserDetailsService {
 		}
 		
 	}
+	
+	/**
+	 * O objetivo principal dessa service é apenas verificar o status do login na base de dados
+	 * @param login
+	 * @return
+	 */
+	public boolean statusLoginVerificado(String loginHttp) {
+		
+		System.out.println("Entrando no metodo statusLogin");
+		
+		if(loginHttp == null || loginHttp.trim().isEmpty()
+				 ) {
+			System.err.println("Detectado exclusão do LocalStorage, atualizando status do login...");
+			System.out.println("Nome do usuário que logou: "+ UsuarioService.usuario.getLogin());
+			throw new RuntimeException("Pausado para teste !");
+		} else {
+			 
+			Boolean statusLogin = userAccessRepository.statusLoginUsuario(loginHttp);
+			if(statusLogin) {
+				
+				return true;	// retorno do status
+			} 
+		}
+		System.out.println("Retornando false");
+		return false;
+		
+		
+		
+		
+		
+	}
+	
+	 
 
 
 	public void deslogar(String usuarioRequest) {

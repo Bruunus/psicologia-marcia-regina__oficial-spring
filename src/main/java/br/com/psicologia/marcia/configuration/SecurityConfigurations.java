@@ -30,9 +30,10 @@ public class SecurityConfigurations {
 				.cors(cors -> cors.disable())
 	            .authorizeHttpRequests(auth -> auth
 	                .requestMatchers("/login").permitAll()
-	                .requestMatchers("/register").permitAll()  
+	                .requestMatchers("/register").permitAll() 
 	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
 	                .requestMatchers("/status-login").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/status-login-get").permitAll()
 	                .anyRequest().authenticated()
                 
 //	            ).logout(logout -> logout

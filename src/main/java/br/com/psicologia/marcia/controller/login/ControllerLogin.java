@@ -15,7 +15,7 @@ import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.DTO.DadosTokenJWT;
 import br.com.psicologia.marcia.JWT.TokenService;
 import br.com.psicologia.marcia.model.Usuario;
-import br.com.psicologia.marcia.service.UsuarioService;
+import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -32,12 +32,7 @@ public class ControllerLogin {
 	@Autowired
 	private UsuarioService userService;
 	
-	
-	
- 
-	
-	
-	 
+	private static Usuario usuario = new Usuario();
 	
 	
 	
@@ -45,40 +40,42 @@ public class ControllerLogin {
 //	@RequestMapping(value = "/login", method = RequestMethod.POST)
 	@PostMapping("login")	
 	public ResponseEntity login(@Valid @RequestBody Usuario dados) {
-			
-			try {
+		
+		ControllerLogin.usuario.setLogin(dados.getLogin());
+					
+		try {
 //				System.out.println("Dados da request: Login: "+dados.getLogin()+"  Senha: "+ dados.getSenha());		//{Debug}\\
-	            var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
-	            var autenticacao = manager.authenticate(autenticacaoToken);
+            var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
+            var autenticacao = manager.authenticate(autenticacaoToken);
 //	            System.out.println(autenticacao);	 //{Debug}\\        
-	       
-	            if (autenticacao != null && autenticacao.isAuthenticated()) {
-	            	
-	            	
-	            	boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
-	            	
-	            	if(verificarAutenticacao) {
-	        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	        					.body("Já existe um usuário logado nesta conta, acesso negado.");
-	        		} else {	            	
-	            	
-		                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
-		                var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
-		                
-		                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario));
-	        		}
-	            } else {
-	                // Se a autenticação falhar ou não estiver autenticada
-	                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	            }
-	            
-	        } catch (Exception e) {
-	        	e.getMessage();
-	        	e.printStackTrace();
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-	        }
-		
-		
+       
+            if (autenticacao != null && autenticacao.isAuthenticated()) {
+            	
+            	
+            	boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
+            	
+            	if(verificarAutenticacao) {
+        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        					.body("Já existe um usuário logado nesta conta, acesso negado.");
+        		} else {	            	
+            	
+	                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
+	                var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
+	                
+	                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario));
+        		}
+            } else {
+                // Se a autenticação falhar ou não estiver autenticada
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            
+        } catch (Exception e) {
+        	e.getMessage();
+        	e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+	
+	
 		
 		
 		
@@ -112,6 +109,21 @@ public class ControllerLogin {
 			System.out.println("Usuário não está logado");
 			return ResponseEntity.status(HttpStatus.OK).build();
 		}
+		 
+	}
+	
+	@PostMapping("status-login-get")
+	public ResponseEntity<?> verificacaoDeStatusPollingDeUsuario() {
+		String usuarioLogado = ControllerLogin.usuario.getLogin();
+		System.out.println("Capiturando o usuario logado: " + usuarioLogado);
+		boolean statusLogin = userService.statusLoginVerificado(usuarioLogado);
+		if(statusLogin) {
+			System.out.println("Capiturando o usuario logado: " + usuarioLogado);
+			return ResponseEntity.ok(statusLogin);
+		}
+	 
+		return null;
+		
 		 
 	}
 	
