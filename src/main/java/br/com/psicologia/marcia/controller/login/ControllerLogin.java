@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -99,7 +100,7 @@ public class ControllerLogin {
 	@PostMapping("status-login")
 	public ResponseEntity<?> statusDeAutenticacaoDeUsuario(@RequestBody AccessUserManagerRecord usuario) {
 		// verificar no banco esse nome e busco pelo status do login e retorne bolean
-		System.out.println("Valor do request: "+usuario);
+		System.out.println("Entrado em 'status logins => Valor do request: "+usuario);
 		boolean statusLogin = userService.statusLogin(usuario);
 		if(statusLogin) {
 			System.err.println("O usuário já está logado");
@@ -112,19 +113,16 @@ public class ControllerLogin {
 		 
 	}
 	
-	@PostMapping("status-login-get")
+	@GetMapping("status-update")
 	public ResponseEntity<?> verificacaoDeStatusPollingDeUsuario() {
-		String usuarioLogado = ControllerLogin.usuario.getLogin();
-		System.out.println("Capiturando o usuario logado: " + usuarioLogado);
-		boolean statusLogin = userService.statusLoginVerificado(usuarioLogado);
-		if(statusLogin) {
-			System.out.println("Capiturando o usuario logado: " + usuarioLogado);
-			return ResponseEntity.ok(statusLogin);
-		}
 	 
-		return null;
-		
-		 
+		boolean statusLogin = userService.statusUpdateService();
+		if(statusLogin) {			 
+			return ResponseEntity.ok(statusLogin);
+		} else {
+			return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+			 
 	}
 	
 	 

@@ -133,33 +133,26 @@ public class UsuarioService implements UserDetailsService {
 	}
 	
 	/**
-	 * O objetivo principal dessa service é apenas verificar o status do login na base de dados
+	 * O objetivo principal dessa service é atualizar o status do login para false validando e certificando o 
+	 * logoff do usuário 
+	 * 
 	 * @param login
 	 * @return
 	 */
-	public boolean statusLoginVerificado(String loginHttp) {
+	public boolean statusUpdateService() {		
 		
-		System.out.println("Entrando no metodo statusLogin");
-		
-		if(loginHttp == null || loginHttp.trim().isEmpty()
-				 ) {
-			System.err.println("Detectado exclusão do LocalStorage, atualizando status do login...");
-			System.out.println("Nome do usuário que logou: "+ UsuarioService.usuario.getLogin());
-			throw new RuntimeException("Pausado para teste !");
+		String username = UsuarioService.usuario.getLogin();
+		System.out.println("Usuário a se deslogar: "+username);
+		deslogar(username);		
+		AccessUserManager findByNome = userAccessRepository.findByNome(username);
+		Boolean statusLogin = findByNome.getStatusLogin();
+		System.out.println("Status desse usuário após deslogar: "+statusLogin);
+		if(statusLogin) {
+			System.out.println("Usuário deslogado");
+			return true;
 		} else {
-			 
-			Boolean statusLogin = userAccessRepository.statusLoginUsuario(loginHttp);
-			if(statusLogin) {
-				
-				return true;	// retorno do status
-			} 
-		}
-		System.out.println("Retornando false");
-		return false;
-		
-		
-		
-		
+			throw new RuntimeException("Erro ao atualizar status e deslogar usuário");
+		}		
 		
 	}
 	

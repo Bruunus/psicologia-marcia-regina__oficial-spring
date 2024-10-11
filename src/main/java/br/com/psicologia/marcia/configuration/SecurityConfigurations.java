@@ -29,11 +29,11 @@ public class SecurityConfigurations {
 				.csrf(csrf -> csrf.disable())
 				.cors(cors -> cors.disable())
 	            .authorizeHttpRequests(auth -> auth
-	                .requestMatchers("/login").permitAll()
-	                .requestMatchers("/register").permitAll() 
+	                .requestMatchers(HttpMethod.POST,"/login").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/register").permitAll() 
 	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
-	                .requestMatchers("/status-login").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/status-login-get").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/status-login").permitAll()
+	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
 	                .anyRequest().authenticated()
                 
 //	            ).logout(logout -> logout
