@@ -1,6 +1,7 @@
 package br.com.psicologia.marcia.repository.usuario;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,7 +10,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.AccessUserManager;
+import br.com.psicologia.marcia.model.Usuario;
 
 @Repository
 public interface UserAccessRepository extends JpaRepository<AccessUserManager, Long> {
@@ -22,6 +25,12 @@ public interface UserAccessRepository extends JpaRepository<AccessUserManager, L
 	Boolean statusLoginUsuario(@Param("usuarioLogin") String usuarioLogin);
 
 	AccessUserManager findByNome(String usuarioLogin);
+	
+	@Query(value = "SELECT nome FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
+	String procurarPorNome(@Param("usuarioLogin") String usuarioLogin);
+	
+	
+//	List<AccessUserManagerRecord> findByNome(String usuarioLogin);
 
 	
 	@Transactional

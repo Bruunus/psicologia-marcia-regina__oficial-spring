@@ -4,7 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,6 +18,7 @@ import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
 import br.com.psicologia.marcia.DTO.DadosTokenJWT;
 import br.com.psicologia.marcia.JWT.TokenService;
 import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.service.error.MessageError;
 import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.validation.Valid;
 
@@ -32,6 +35,9 @@ public class ControllerLogin {
 	
 	@Autowired
 	private UsuarioService userService;
+	
+	@Autowired
+	private MessageError messageErro;
 	
 	private static Usuario usuario = new Usuario();
 	
@@ -54,10 +60,20 @@ public class ControllerLogin {
             	
             	
             	boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
+            	boolean usuarioNaoExiste = userService.validacaoDeLogin(dados.getLogin());
             	
             	if(verificarAutenticacao) {
+            		
+            		messageErro.setMessage("senha_incorreta");
+        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)        					
+        					.body(messageErro.getMessage());
+        			
+        		} else if (usuarioNaoExiste) {
+        			
+        			messageErro.setMessage("usuario_inexistente");
         			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-        					.body("Já existe um usuário logado nesta conta, acesso negado.");
+        					.body(messageErro.getMessage());
+        			
         		} else {	            	
             	
 	                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
@@ -69,6 +85,17 @@ public class ControllerLogin {
                 // Se a autenticação falhar ou não estiver autenticada
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+            
+        } catch (UsernameNotFoundException e) {
+        	
+            messageErro.setMessage("usuario_inexistente");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
+            
+        } catch (BadCredentialsException e) {
+            // Captura a exceção de credenciais inválidas (senha incorreta)
+        	e.getMessage();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(messageErro.getMessage());
             
         } catch (Exception e) {
         	e.getMessage();
@@ -144,6 +171,15 @@ public class ControllerLogin {
 		
     }
 	
+	
+//	@PostMapping("teste")
+//    public ResponseEntity<?> testUser(@RequestBody Usuario user) {
+//		String login = user.getLogin();
+//		boolean validarExistenciaDeUsuario = userService.validacaoDeLogin(login);
+//		System.out.println(validarExistenciaDeUsuario);
+//    	
+//		return ResponseEntity.ok("Teste");
+//	}
 	
 	
 	 

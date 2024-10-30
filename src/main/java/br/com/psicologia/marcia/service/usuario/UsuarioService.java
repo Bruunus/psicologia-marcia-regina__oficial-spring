@@ -1,6 +1,8 @@
 package br.com.psicologia.marcia.service.usuario;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -15,11 +17,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
-import br.com.psicologia.marcia.controller.login.ControllerLogin;
 import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.UserAccessRepository;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.service.error.MessageError;
 
 @Configuration
 @Service
@@ -37,7 +39,15 @@ public class UsuarioService implements UserDetailsService {
 	@Autowired
 	private UserAccessRepository userAccessRepository;
 	
+	@Autowired
+	private UsuarioRepository usuarioRepositoty;
+	
+	@Autowired
+	private MessageError messageError;
+	
 	private static Usuario usuario = new Usuario();
+
+	private AccessUserManagerRecord login;
 	
 	 
 	 
@@ -69,7 +79,7 @@ public class UsuarioService implements UserDetailsService {
 	 * Login no sistema
 	 */
 	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+	public UserDetails loadUserByUsername(String username) /*throws UsernameNotFoundException*/ {
 		
 		System.out.println("LOGIN RECEBIDO: " +username);
 		UsuarioService.usuario.setLogin(username);
@@ -77,12 +87,13 @@ public class UsuarioService implements UserDetailsService {
 		UserDetails findBylogin = userRepository.findBylogin(username);
 		
 		if(findBylogin == null) {
-			System.out.println("O valor está nulo");
+			System.out.println("Usuário inexistente");
+			messageError.setMessage("usuario_inexiste");
 			throw new UsernameNotFoundException("Entrando em Exception -> HttpRequestMethodNotSupportedException: " + username);
-			 
+		 
 		} else {
 			return findBylogin;
-		}		
+		}	
 	}
 	
 	
@@ -97,11 +108,12 @@ public class UsuarioService implements UserDetailsService {
 		Boolean verificarUsuarioLogado = userAccessRepository.statusLoginUsuario(usuarioLogin);
 		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
 		
-		if(verificarUsuarioLogado) {	
-			System.err.println("Ja existe um usuário logado");
-			
-			// se caso ja for true então retorna erro	
+		if(verificarUsuarioLogado) {
+			messageError.setMessage("usuario_ja_logado");
 			return true;
+			
+			
+			
 		} else {
 			// verifica se é false = 0 ---->>> se for então então pode atualizar pra 1 e retorna true 
 			System.out.println("Esse usuário está logado agora !");			
@@ -110,6 +122,22 @@ public class UsuarioService implements UserDetailsService {
 					true,
 					LocalDateTime.now());
 			
+			return false;
+		}
+		
+	}
+	
+	/**
+	 * Verifica se este login fornecido é existente na tabela de usuários
+	 * @param loginHttp
+	 * @return
+	 */
+	public boolean validacaoDeLogin(String loginHttp) {
+		System.out.println("Valor da pesquisa: "+loginHttp);
+		String usuario = userAccessRepository.procurarPorNome(loginHttp);
+		if(usuario == null || usuario.equals("")) {
+			return true;
+		} else {
 			return false;
 		}
 		
@@ -133,8 +161,8 @@ public class UsuarioService implements UserDetailsService {
 	}
 	
 	/**
-	 * O objetivo principal dessa service é atualizar o status do login para false validando e certificando o 
-	 * logoff do usuário 
+	 * O objetivo principal dessa service é atualizar o status do login para false validando e 
+	 * certificando o logoff do usuário 
 	 * 
 	 * @param login
 	 * @return
@@ -143,9 +171,11 @@ public class UsuarioService implements UserDetailsService {
 		
 		String username = UsuarioService.usuario.getLogin();
 		System.out.println("Usuário a se deslogar: "+username);
-		deslogar(username);		
+		deslogar(username);	
+		
 		AccessUserManager findByNome = userAccessRepository.findByNome(username);
 		Boolean statusLogin = findByNome.getStatusLogin();
+		
 		System.out.println("Status desse usuário após deslogar: "+statusLogin);
 		if(statusLogin) {
 			System.out.println("Usuário deslogado");
@@ -158,19 +188,21 @@ public class UsuarioService implements UserDetailsService {
 	
 	 
 
-
-	public void deslogar(String usuarioRequest) {
-		
-		
+	/**
+	 * Metodo para deslogar um usuário da sessão 
+	 * @param usuarioRequest
+	 */
+	public void deslogar(String usuarioRequest) {		
 //		String user = usuario.login();		 
 		AccessUserManager findByNome = userAccessRepository.findByNome(usuarioRequest);
 		String usuario = findByNome.getNome();
-		userAccessRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());
-		
-		
-		
+		userAccessRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());		
 //		System.out.println("Usário que vai se deslogar: "+usuario);
 	}
+	
+	AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(String login) {
+        return new AccessUserManagerRecord(login);
+    }
 	
 	
 //	@Bean

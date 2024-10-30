@@ -32,7 +32,8 @@ public class SecurityConfigurations {
 	                .requestMatchers(HttpMethod.POST,"/login").permitAll()
 	                .requestMatchers(HttpMethod.POST,"/register").permitAll() 
 	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/status-login").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/status-login").permitAll() 
+	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
 	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
 	                .anyRequest().authenticated()
                 

@@ -10,7 +10,6 @@ import br.com.psicologia.marcia.model.Usuario;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 	UserDetails findBylogin(String login);
-
 	
 	
 
