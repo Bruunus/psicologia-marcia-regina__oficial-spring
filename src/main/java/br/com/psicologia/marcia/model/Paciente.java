@@ -1,6 +1,7 @@
 package br.com.psicologia.marcia.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,8 +9,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(name = "paciente")
 public class Paciente {
 	
 	@Id
@@ -24,19 +28,24 @@ public class Paciente {
 	
 	private String telefone;
 	
+	private String telefoneContato;
+	
 	private Short idade;
 	
 	private LocalDate dataNascimento;
 	
 	private String estadoCivil;
 	
-	private Short filhos;
+	private String filhos;
+	
+	private String qtdFilhos;
 	
 	private String grauEscolaridade;
 	
 	private String profissao;
 	
-	private String endereco;
+	@OneToMany(mappedBy = "paciente")
+	private List<Endereco> endereco;
 	
 	private String queixa;
 	
@@ -125,11 +134,11 @@ public class Paciente {
 	
 	
 
-	public Short getFilhos() {
+	public String getFilhos() {
 		return filhos;
 	}
 
-	public void setFilhos(Short filhos) {
+	public void setFilhos(String filhos) {
 		this.filhos = filhos;
 	}
 	
@@ -155,11 +164,11 @@ public class Paciente {
 	
 	
 
-	public String getEndereco() {
+	public List<Endereco> getEndereco() {
 		return endereco;
 	}
 
-	public void setEndereco(String endereco) {
+	public void setEndereco(List<Endereco> endereco) {
 		this.endereco = endereco;
 	}
 	
@@ -182,6 +191,23 @@ public class Paciente {
 		this.perfil = perfil;
 	}
 	
+	public String getTelefoneContato() {
+		return telefoneContato;
+	}
+
+	public void setTelefoneContato(String telefoneContato) {
+		this.telefoneContato = telefoneContato;
+	}
+
+	public String getQtdFilhos() {
+		return qtdFilhos;
+	}
+
+	public void setQtdFilhos(String qtdFilhos) {
+		this.qtdFilhos = qtdFilhos;
+	}
+	
+	
 	
 	@Override
 	public String toString() {
@@ -196,11 +222,13 @@ public class Paciente {
 				this.estadoCivil+" "+
 				this.filhos+" "+
 				this.grauEscolaridade+" "+
-				this.profissao+" "+
-				this.endereco+" "+
 				this.queixa+" "+
 				this.perfil+" ";
 	}
+
+	
+
+	 
 
 	
  

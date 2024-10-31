@@ -43,70 +43,47 @@ public class ControllerLogin {
 	
 	
 	
-	@SuppressWarnings("rawtypes")
-//	@RequestMapping(value = "/login", method = RequestMethod.POST)
-	@PostMapping("login")	
-	public ResponseEntity login(@Valid @RequestBody Usuario dados) {
-		
-		ControllerLogin.usuario.setLogin(dados.getLogin());
-					
-		try {
-//				System.out.println("Dados da request: Login: "+dados.getLogin()+"  Senha: "+ dados.getSenha());		//{Debug}\\
-            var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
-            var autenticacao = manager.authenticate(autenticacaoToken);
-//	            System.out.println(autenticacao);	 //{Debug}\\        
-       
-            if (autenticacao != null && autenticacao.isAuthenticated()) {
-            	
-            	
-            	boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
-            	boolean usuarioNaoExiste = userService.validacaoDeLogin(dados.getLogin());
-            	
-            	if(verificarAutenticacao) {
-            		
-            		messageErro.setMessage("senha_incorreta");
-        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)        					
-        					.body(messageErro.getMessage());
-        			
-        		} else if (usuarioNaoExiste) {
-        			
-        			messageErro.setMessage("usuario_inexistente");
-        			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-        					.body(messageErro.getMessage());
-        			
-        		} else {	            	
-            	
+	@PostMapping("login")
+	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados) {
+	    ControllerLogin.usuario.setLogin(dados.getLogin());
+
+	    // Verifique se o usuário existe antes de tentar autenticar
+	    boolean usuarioNaoExiste = userService.validacaoDeLogin(dados.getLogin());
+	    if (usuarioNaoExiste) {
+	        messageErro.setMessage("usuario_inexistente");
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+	        		.body(messageErro.getMessage());
+	    }
+
+	    try {
+	        var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
+	        var autenticacao = manager.authenticate(autenticacaoToken);
+
+	        if (autenticacao != null && autenticacao.isAuthenticated()) {
+	            boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
+
+	            if (verificarAutenticacao) {
+	                messageErro.setMessage("usuario_ja_logado");
+	                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
+	            } else {
 	                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
 	                var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
-	                
 	                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario));
-        		}
-            } else {
-                // Se a autenticação falhar ou não estiver autenticada
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            
-        } catch (UsernameNotFoundException e) {
-        	
-            messageErro.setMessage("usuario_inexistente");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
-            
-        } catch (BadCredentialsException e) {
-            // Captura a exceção de credenciais inválidas (senha incorreta)
-        	e.getMessage();
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(messageErro.getMessage());
-            
-        } catch (Exception e) {
-        	e.getMessage();
-        	e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-	
-	
-		
-		
-		
+	            }
+	        } else {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+	        }
+
+	    } catch (BadCredentialsException e) {
+	        // Captura a exceção de credenciais inválidas (senha incorreta)
+	        messageErro.setMessage("senha_incorreta");
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
+
+	    } catch (Exception e) {
+	        // Captura qualquer outra exceção
+	        e.printStackTrace(); // Log da exceção
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno do servidor");
+	    }
 	}
 	
 

@@ -1,6 +1,7 @@
 package br.com.psicologia.marcia.controller.paciente;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,23 +11,29 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.PacienteRecord;
-import br.com.psicologia.marcia.service.paciente.PacienteService;
+import br.com.psicologia.marcia.service.paciente.CreatePacienteService;
 
 
 
 @RestController
 @RequestMapping("/")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-public class ControllerPaciente {
+public class CreateControllerPaciente {
 
 	@Autowired
-	private PacienteService pacienteService;
+	private CreatePacienteService createPacienteService;
 	 
-	@PostMapping("/paciente")
+	@PostMapping("/cadastro/paciente")
 	@CrossOrigin(methods = RequestMethod.POST)
-	public ResponseEntity<PacienteRecord> cadastroDePaciente(@RequestBody PacienteRecord pacienteDTO) {	
-		pacienteService.cadastrarPaciente(pacienteDTO);
-		return ResponseEntity.ok().build();
+	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteDTO) {	
+		Boolean cadastrarPaciente = createPacienteService.cadastrarPaciente(pacienteDTO);
+		if(cadastrarPaciente) {
+			return ResponseEntity.ok().build();
+		} else {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Erro interno ao realizar cadastro");
+		}
+		
 	}
 	
 }

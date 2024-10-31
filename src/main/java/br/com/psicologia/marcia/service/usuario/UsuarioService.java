@@ -87,7 +87,7 @@ public class UsuarioService implements UserDetailsService {
 		UserDetails findBylogin = userRepository.findBylogin(username);
 		
 		if(findBylogin == null) {
-			System.out.println("Usuário inexistente");
+			System.out.println("Usuário inexistente (UserDetails)");
 			messageError.setMessage("usuario_inexiste");
 			throw new UsernameNotFoundException("Entrando em Exception -> HttpRequestMethodNotSupportedException: " + username);
 		 
