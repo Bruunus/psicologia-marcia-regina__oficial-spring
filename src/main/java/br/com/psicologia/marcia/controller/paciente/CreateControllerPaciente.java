@@ -25,14 +25,22 @@ public class CreateControllerPaciente {
 	 
 	@PostMapping("/cadastro/paciente")
 	@CrossOrigin(methods = RequestMethod.POST)
-	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteDTO) {	
-		Boolean cadastrarPaciente = createPacienteService.cadastrarPaciente(pacienteDTO);
-		if(cadastrarPaciente) {
-			return ResponseEntity.ok().build();
-		} else {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body("Erro interno ao realizar cadastro");
+	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteRecord) {	
+		Boolean cadastrarPaciente = createPacienteService.cadastrarPaciente(pacienteRecord);		
+		
+		try {
+			if(cadastrarPaciente) {
+				return ResponseEntity.ok().build();
+			} else {
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Erro interno ao realizar cadastro");
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
+		return null;
 		
 	}
 	

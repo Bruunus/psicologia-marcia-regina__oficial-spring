@@ -33,6 +33,7 @@ public class SecurityConfigurations {
 	                .requestMatchers(HttpMethod.POST,"/register").permitAll() 
 	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
 	                .requestMatchers(HttpMethod.POST,"/status-login").permitAll() 
+	                .requestMatchers(HttpMethod.POST,"/cadastro/paciente").permitAll()
 	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
 	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
 	                .anyRequest().authenticated()

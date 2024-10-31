@@ -1,11 +1,12 @@
 package br.com.psicologia.marcia.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -22,7 +23,7 @@ public class Endereco {
 	
 	private String complemento;
 	
-	private String Bairro;
+	private String bairro;
 	
 	private String cidade;	
 	
@@ -30,8 +31,7 @@ public class Endereco {
 	
 	private String cep;
 	
-	@ManyToOne
-	@JoinColumn(name = "id_paciente")
+	@OneToOne(mappedBy = "endereco")
 	private Paciente paciente;
 	
 	
@@ -70,11 +70,11 @@ public class Endereco {
 	}
 
 	public String getBairro() {
-		return Bairro;
+		return bairro;
 	}
 
 	public void setBairro(String bairro) {
-		Bairro = bairro;
+		this.bairro = bairro;
 	}
 
 	public String getCidade() {
@@ -103,13 +103,21 @@ public class Endereco {
 	
 	@Override
 	public String toString() {
-		return 	this.Bairro+""+
+		return 	this.bairro+""+
 				this.cep+""+
 				this.cidade+""+
 				this.complemento+""+
 				this.numero+""+
 				this.rua+""+
 				this.uf;
+	}
+
+	public Paciente getPaciente() {
+		return paciente;
+	}
+
+	public void setPaciente(Paciente paciente) {
+		this.paciente = paciente;
 	}
 	
 	

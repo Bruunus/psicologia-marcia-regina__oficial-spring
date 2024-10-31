@@ -1,15 +1,16 @@
 package br.com.psicologia.marcia.model;
 
 import java.time.LocalDate;
-import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -36,21 +37,26 @@ public class Paciente {
 	
 	private String estadoCivil;
 	
-	private String filhos;
+	private Boolean filhos;
 	
-	private String qtdFilhos;
+	private Short qtdFilhos;
 	
 	private String grauEscolaridade;
 	
 	private String profissao;
 	
-	@OneToMany(mappedBy = "paciente")
-	private List<Endereco> endereco;
-	
-	private String queixa;
-	
 	@Enumerated(EnumType.STRING)
 	private Perfil perfil;
+	
+	@OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "endereco_id", referencedColumnName = "id")
+	private Endereco endereco;
+	
+	@OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "queixa_id", referencedColumnName = "id")
+	private Queixa queixa;
+	
+	
 
 	
 	
@@ -134,11 +140,11 @@ public class Paciente {
 	
 	
 
-	public String getFilhos() {
+	public Boolean getFilhos() {
 		return filhos;
 	}
 
-	public void setFilhos(String filhos) {
+	public void setFilhos(Boolean filhos) {
 		this.filhos = filhos;
 	}
 	
@@ -164,21 +170,21 @@ public class Paciente {
 	
 	
 
-	public List<Endereco> getEndereco() {
+	public Endereco getEndereco() {
 		return endereco;
 	}
 
-	public void setEndereco(List<Endereco> endereco) {
+	public void setEndereco(Endereco endereco) {
 		this.endereco = endereco;
 	}
 	
 	
 
-	public String getQueixa() {
+	public Queixa getQueixa() {
 		return queixa;
 	}
 
-	public void setQueixa(String queixa) {
+	public void setQueixa(Queixa queixa) {
 		this.queixa = queixa;
 	}
 	
@@ -199,11 +205,11 @@ public class Paciente {
 		this.telefoneContato = telefoneContato;
 	}
 
-	public String getQtdFilhos() {
+	public Short getQtdFilhos() {
 		return qtdFilhos;
 	}
 
-	public void setQtdFilhos(String qtdFilhos) {
+	public void setQtdFilhos(Short qtdFilhos) {
 		this.qtdFilhos = qtdFilhos;
 	}
 	
