@@ -23,7 +23,7 @@ public class CreateControllerPaciente {
 	@Autowired
 	private CreatePacienteService createPacienteService;
 	 
-	@PostMapping("/cadastro/paciente")
+	@PostMapping("cadastro/paciente")
 	@CrossOrigin(methods = RequestMethod.POST)
 	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteRecord) {	
 		Boolean cadastrarPaciente = createPacienteService.cadastrarPaciente(pacienteRecord);		
