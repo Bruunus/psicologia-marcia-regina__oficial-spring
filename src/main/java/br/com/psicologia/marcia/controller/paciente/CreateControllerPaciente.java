@@ -25,13 +25,19 @@ public class CreateControllerPaciente {
 	 
 	@PostMapping("cadastro/paciente")
 	@CrossOrigin(methods = RequestMethod.POST)
-	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteRecord) {	
+	public ResponseEntity<?> cadastroDePaciente(@RequestBody PacienteRecord pacienteRecord) throws Exception {
+		
+		if(pacienteRecord.dataNascimento() == null) {
+			
+			throw new Exception("data de nascimento está nula: "+ pacienteRecord.dataNascimento());
+		}
+		
 		Boolean cadastrarPaciente = createPacienteService.cadastrarPaciente(pacienteRecord);		
 		
 		try {
 			if(cadastrarPaciente) {
-				return ResponseEntity.ok().build();
-			} else {
+				return ResponseEntity.status(HttpStatus.OK).build();	
+				} else {
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 						.body("Erro interno ao realizar cadastro");
 			}
@@ -39,8 +45,11 @@ public class CreateControllerPaciente {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println(e.getMessage());
+			
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                .body("Erro ao processar a requisição: " + e.getMessage());
 		}
-		return null;
+		 
 		
 	}
 	

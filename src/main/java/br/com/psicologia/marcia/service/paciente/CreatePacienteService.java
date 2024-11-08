@@ -14,9 +14,7 @@ import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
 @Service
 public class CreatePacienteService {
 		 
-	private static Paciente paciente;
-	private static Endereco endereco;
-	private static Queixa queixa;
+	
 	
 	private PacienteValidation pacienteValidation;
 	
@@ -61,6 +59,8 @@ public class CreatePacienteService {
 				paciente.setProfissao(pacienteRecord.profissao());
 				paciente.setPerfil(pacienteRecord.perfil());
 				
+				System.out.println(pacienteRecord.dataNascimento());
+				
 				
 //				if (pacienteRecord.endereco() != null) {
 					Endereco endereco = new Endereco();
@@ -88,7 +88,7 @@ public class CreatePacienteService {
 	                ;
 //	            }
 								
-				
+				// salva primeiro por causa do relacionamento bidirecional
 				endereco = enderecoRepository.save(endereco);
 				paciente.setEndereco(endereco);
 				
