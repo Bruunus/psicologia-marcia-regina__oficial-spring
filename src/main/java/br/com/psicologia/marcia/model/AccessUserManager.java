@@ -20,6 +20,7 @@ public class AccessUserManager {
 	
 	private String nome;
 	
+	@Column(columnDefinition = "BOOLEAN")	//0 e 1
 	private Boolean statusLogin;
 	
 	@Column(name = "ultimo_login")

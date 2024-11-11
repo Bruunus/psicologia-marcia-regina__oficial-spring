@@ -24,7 +24,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+//@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ControllerLogin {
 
 	@Autowired
@@ -39,13 +39,11 @@ public class ControllerLogin {
 	@Autowired
 	private MessageError messageErro;
 	
-	private static Usuario usuario = new Usuario();
 	
 	
 	
 	@PostMapping("login")
 	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados) {
-	    ControllerLogin.usuario.setLogin(dados.getLogin());
 
 	    // Verifique se o usuário existe antes de tentar autenticar
 	    boolean usuarioNaoExiste = userService.validacaoDeLogin(dados.getLogin());
