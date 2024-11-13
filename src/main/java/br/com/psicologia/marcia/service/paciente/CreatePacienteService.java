@@ -1,6 +1,8 @@
 package br.com.psicologia.marcia.service.paciente;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.PacienteRecord;
@@ -15,8 +17,8 @@ import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
 public class CreatePacienteService {
 		 
 	
-	
-	private PacienteValidation pacienteValidation;
+	@Autowired
+	private PacienteValidationService pacienteValidationService;
 	
 	@Autowired
 	private CreatePacienteRepository createPacienteRepository;
@@ -29,19 +31,17 @@ public class CreatePacienteService {
 
 	
 	
-	public Boolean cadastrarPaciente(PacienteRecord pacienteRecord) {
+	public ResponseEntity<?> cadastrarPaciente(PacienteRecord pacienteRecord) {
 		
-//		pacienteValidation = new PacienteValidation();		 
-//		if(pacienteValidation.validacaoNaoPodeSerIgual(pacienteDTO)) {
-//			
-//			System.out.println("Retorno false");
-//			return false;
-//		} else {
-						
-//			Ainda em implementação
-			
-//			System.out.println("Retorno true");
-			
+		System.out.println("Antes de enviar o nome: "+pacienteRecord.nomeCompleto());
+		
+		ResponseEntity<?> response = 
+				pacienteValidationService.validacaoNaoPodeSerIgual(pacienteRecord.nomeCompleto());
+		
+//		pacienteValidationService = new PacienteValidationService();		 
+		if(response.getStatusCode() != HttpStatus.OK) {			 
+			return response;
+		} else {
 			try {
 				Paciente paciente = new Paciente();				
 				
@@ -62,31 +62,25 @@ public class CreatePacienteService {
 				System.out.println(pacienteRecord.dataNascimento());
 				
 				
-//				if (pacienteRecord.endereco() != null) {
-					Endereco endereco = new Endereco();
-					
-	                endereco.setRua(pacienteRecord.endereco().rua());
-	                endereco.setNumero(pacienteRecord.endereco().numero());
-	                endereco.setComplemento(pacienteRecord.endereco().complemento());
-	                endereco.setBairro(pacienteRecord.endereco().bairro());
-	                endereco.setCidade(pacienteRecord.endereco().cidade());
-	                endereco.setUf(pacienteRecord.endereco().uf());
-	                endereco.setCep(pacienteRecord.endereco().cep());
-//	                endereco.setPaciente(pacienteRecord.endereco().pacienteRecord());
-	                
-	                
-	                
-	                
-//	            }
+//					if (pacienteRecord.endereco() != null) {
+				Endereco endereco = new Endereco();
 				
-//				if (pacienteRecord.queixa() != null) {
-					Queixa queixa = new Queixa();
-	                queixa.setQueixa(pacienteRecord.queixa().queixa());
-	                
-	                
-	                
-	                ;
-//	            }
+	            endereco.setRua(pacienteRecord.endereco().rua());
+	            endereco.setNumero(pacienteRecord.endereco().numero());
+	            endereco.setComplemento(pacienteRecord.endereco().complemento());
+	            endereco.setBairro(pacienteRecord.endereco().bairro());
+	            endereco.setCidade(pacienteRecord.endereco().cidade());
+	            endereco.setUf(pacienteRecord.endereco().uf());
+	            endereco.setCep(pacienteRecord.endereco().cep());
+//		                endereco.setPaciente(pacienteRecord.endereco().pacienteRecord());
+	 
+				Queixa queixa = new Queixa();
+	            queixa.setQueixa(pacienteRecord.queixa().queixa());  
+	            
+//	            Teste do catch 
+//	            if(true)
+//	            	throw new Exception("Este é um teste");
+	               
 								
 				// salva primeiro por causa do relacionamento bidirecional
 				endereco = enderecoRepository.save(endereco);
@@ -97,8 +91,10 @@ public class CreatePacienteService {
 				
 				createPacienteRepository.save(paciente);
 				
-				System.out.println("Cadastro realizado com sucesso");
-				return true;
+				
+				
+				System.out.println("Cadastro realizado com sucesso no servidor!");
+				return ResponseEntity.ok("Paciente cadastrado com sucesso!");
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -106,23 +102,19 @@ public class CreatePacienteService {
 				System.out.println(e.getMessage());
 				e.getLocalizedMessage();
 				
-				return false;
-			}
-			
-			
-			
-			
-			
-			
-			
-			
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body("Ocorreu um erro interno ao salvar dos dados no servidor, contate o administrador de sistema.");
+			}			
 		}
+			
+		
+	}
 		
 		
 
 		
 		
 		 
-//	}
+ 
 
 }
