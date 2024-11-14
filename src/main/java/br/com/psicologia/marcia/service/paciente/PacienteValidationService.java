@@ -13,7 +13,7 @@ public class PacienteValidationService  {
 	@Autowired
 	private ReadPacienteRepository readPacienteRepository;
 	
-	protected ResponseEntity<?> validacaoNaoPodeSerIgual(String nomeCompleto) {
+	protected Integer validacaoNaoPodeSerIgual(String nomeCompleto) {
 		
 //		Retire estas anotações somente depois de ter passado para a documentação
 		
@@ -29,14 +29,15 @@ public class PacienteValidationService  {
 		// Realize uma condição, caso boleana para verificar ... 
 		if(pacienteCount > 0) {
 			System.out.println("Paciente já cadastrado");
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body("O paciente já está cadastrado!");
+			return 400;
+		} else {
+			return 200;
 		}
 		// Porém esta validação só deverá ser solta após os testes finais pois 
 //		com teste repetitivo ela não vai deixar passar
 		
 		
-		return ResponseEntity.ok().build();
+		
 		
 		
 	}

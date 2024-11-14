@@ -1,5 +1,8 @@
 package br.com.psicologia.marcia.controller.paciente;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,16 +31,25 @@ public class CreateControllerPaciente {
 	@PostMapping("cadastro/paciente")
 	 
 	public ResponseEntity<?> cadastroDePaciente(@Valid @RequestBody PacienteRecord pacienteRecord) {		
-				
-		return createPacienteService.cadastrarPaciente(pacienteRecord);		
-
-//			if(cadastrarPaciente) {
-//				return ResponseEntity.status(HttpStatus.OK).build();	
-//			} else {
-//				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//						.body("Erro interno ao realizar cadastro");
-//			}
+			
 		
+		try {
+			Integer cadastro = createPacienteService.cadastrarPaciente(pacienteRecord);
+			if (cadastro == 200) { 
+				return ResponseEntity.status(HttpStatus.OK)
+						.body(Collections.singletonMap("message", "Cadastro realizado com sucesso"));
+			} else if(cadastro == 400) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body(Collections.singletonMap("message", "Paciente já cadastrado no sistema"));
+			} else {
+				throw new RuntimeException();			}
+		} catch (RuntimeException e) {
+			e.getMessage();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			.body(Collections.singletonMap("message", "Erro interno ao realizar cadastro"));
+		}
+		
+//		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
 	
 }
