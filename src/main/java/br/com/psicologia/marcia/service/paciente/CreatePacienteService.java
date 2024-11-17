@@ -36,10 +36,10 @@ public class CreatePacienteService {
 		System.out.println("Antes de enviar o nome: "+pacienteRecord.nomeCompleto());
 		
 		Integer response = 
-				pacienteValidationService.validacaoNaoPodeSerIgual(pacienteRecord.nomeCompleto());
+				pacienteValidationService.validacaoNaoPodeSerIgual(pacienteRecord.nomeCompleto(), pacienteRecord.cpf());
 		
 //		pacienteValidationService = new PacienteValidationService();		 
-		if(response != null) {			 
+		if(response != null) {
 			return response; /* Mudado para teste */
 		} else {
 			 
