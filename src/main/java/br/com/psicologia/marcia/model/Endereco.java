@@ -17,7 +17,7 @@ public class Endereco {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	private String rua;
+	private String logradouro;
 	
 	private String numero;
 	
@@ -45,12 +45,12 @@ public class Endereco {
 		this.id = id;
 	}
 
-	public String getRua() {
-		return rua;
+	public String getLogradouro() {
+		return logradouro;
 	}
 
-	public void setRua(String rua) {
-		this.rua = rua;
+	public void setLogradouro(String rua) {
+		this.logradouro = rua;
 	}
 
 	public String getNumero() {
@@ -108,7 +108,7 @@ public class Endereco {
 				this.cidade+""+
 				this.complemento+""+
 				this.numero+""+
-				this.rua+""+
+				this.logradouro+""+
 				this.uf;
 	}
 

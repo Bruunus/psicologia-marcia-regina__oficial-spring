@@ -65,7 +65,7 @@ public class CreatePacienteService {
 //					if (pacienteRecord.endereco() != null) {
 			Endereco endereco = new Endereco();
 			
-            endereco.setRua(pacienteRecord.endereco().rua());
+            endereco.setLogradouro(pacienteRecord.endereco().logradouro());
             endereco.setNumero(pacienteRecord.endereco().numero());
             endereco.setComplemento(pacienteRecord.endereco().complemento());
             endereco.setBairro(pacienteRecord.endereco().bairro());

@@ -2,7 +2,7 @@ package br.com.psicologia.marcia.DTO;
 
 public record EnderecoRecord(
 		Long id,
-		String rua,
+		String logradouro,
 		String numero,
 		String complemento,
 		String bairro,
