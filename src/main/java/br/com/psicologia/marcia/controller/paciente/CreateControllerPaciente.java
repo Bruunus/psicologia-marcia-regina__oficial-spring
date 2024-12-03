@@ -1,6 +1,5 @@
 package br.com.psicologia.marcia.controller.paciente;
 
-import java.util.Collection;
 import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +15,6 @@ import br.com.psicologia.marcia.DTO.PacienteRecord;
 import br.com.psicologia.marcia.service.paciente.CreatePacienteService;
 import jakarta.validation.Valid;
 
- 
-
-
 
 @RestController
 @RequestMapping("/")
@@ -29,7 +25,7 @@ public class CreateControllerPaciente {
 	private CreatePacienteService createPacienteService;
 	 
 	@PostMapping("cadastro/paciente")
-	 
+
 	public ResponseEntity<?> cadastroDePaciente(@Valid @RequestBody PacienteRecord pacienteRecord) {		
 			
 		

@@ -39,7 +39,7 @@ public class CreatePacienteService {
 				pacienteValidationService.validacaoNaoPodeSerIgual(pacienteRecord.nomeCompleto(), pacienteRecord.cpf());
 		
 //		pacienteValidationService = new PacienteValidationService();		 
-		if(response != null) {
+		if(response != 200) {
 			return response; /* Mudado para teste */
 		} else {
 			 

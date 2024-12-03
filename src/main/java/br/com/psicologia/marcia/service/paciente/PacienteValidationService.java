@@ -35,6 +35,7 @@ public class PacienteValidationService  {
 			System.out.println("Paciente já cadastrado no banco de dados");
 			return 400;
 		} else {
+			System.out.println("Liberado da validação para cadastro");
 			return 200;
 		}		
 	}
