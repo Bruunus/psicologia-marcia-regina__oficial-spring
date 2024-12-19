@@ -26,10 +26,10 @@ public class PacienteValidationService  {
 	 * @param cpf
 	 * @return Status code como resultado final da validação
 	 */
-	protected Integer validacaoNaoPodeSerIgual(String nomeCompleto,String cpf) {
+	protected Integer validacaoNaoPodeSerIgual(String cpf) {
 		
 		Integer pacienteCount = 
-				readPacienteRepository.buscaDePacienteDuplicado(nomeCompleto, cpf);
+				readPacienteRepository.buscaDePacienteDuplicado(cpf);
 		
 		if(pacienteCount > 0) {
 			System.out.println("Paciente já cadastrado no banco de dados");
