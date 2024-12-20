@@ -2,11 +2,8 @@ package br.com.psicologia.marcia.DTO;
 
 import java.time.LocalDate;
 
-import br.com.psicologia.marcia.model.Endereco;
 import br.com.psicologia.marcia.model.Perfil;
-import br.com.psicologia.marcia.model.Queixa;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import br.com.psicologia.marcia.model.StatusPaciente;
 
 public record PacienteRecord(
 		
@@ -25,6 +22,7 @@ public record PacienteRecord(
 		String grauEscolaridade, 
 		String profissao, 
 		Perfil perfil,
+		StatusPaciente statusPaciente,
 		EnderecoRecord endereco,
 		QueixaRecord queixa 
 		

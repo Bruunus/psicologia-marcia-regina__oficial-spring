@@ -16,6 +16,8 @@ public interface ReadPacienteRepository extends JpaRepository <Paciente, Long> {
 	
 	@Query(value = "SELECT COUNT(*) > 0 FROM paciente WHERE cpf = :cpf", nativeQuery = true)
 	Integer buscaDePacienteDuplicado(@Param("cpf")String cpf);
+	
+	
 
 	
 

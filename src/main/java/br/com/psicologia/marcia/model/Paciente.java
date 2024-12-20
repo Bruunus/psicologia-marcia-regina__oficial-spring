@@ -56,6 +56,11 @@ public class Paciente {
     @JoinColumn(name = "queixa_id", referencedColumnName = "id")
 	private Queixa queixa;
 	
+	@Enumerated(EnumType.STRING)
+	private StatusPaciente statusPaciente;
+	
+	
+	
 	
 
 	
@@ -197,6 +202,14 @@ public class Paciente {
 		this.perfil = perfil;
 	}
 	
+	public StatusPaciente getStatusPaciente() {
+		return statusPaciente;
+	}
+
+	public void setStatusPaciente(StatusPaciente statusPaciente) {
+		this.statusPaciente = statusPaciente;
+	}
+	
 	public String getTelefoneContato() {
 		return telefoneContato;
 	}
@@ -231,6 +244,8 @@ public class Paciente {
 				this.queixa+" "+
 				this.perfil+" ";
 	}
+
+	
 
 	
 

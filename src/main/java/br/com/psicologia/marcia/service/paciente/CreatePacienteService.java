@@ -9,6 +9,7 @@ import br.com.psicologia.marcia.DTO.PacienteRecord;
 import br.com.psicologia.marcia.model.Endereco;
 import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.model.Queixa;
+import br.com.psicologia.marcia.model.StatusPaciente;
 import br.com.psicologia.marcia.repository.paciente.CreatePacienteRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.EnderecoRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
@@ -58,6 +59,7 @@ public class CreatePacienteService {
 			paciente.setGrauEscolaridade(pacienteRecord.grauEscolaridade());
 			paciente.setProfissao(pacienteRecord.profissao());
 			paciente.setPerfil(pacienteRecord.perfil());
+			paciente.setStatusPaciente(StatusPaciente.ATIVADO);
 			
 			System.out.println(pacienteRecord.dataNascimento());
 			
@@ -76,13 +78,10 @@ public class CreatePacienteService {
  
 			Queixa queixa = new Queixa();
             queixa.setQueixa(pacienteRecord.queixa().queixa());  
-            
-//	            Teste do catch 
-//	            if(true)
-//	            	throw new Exception("Este é um teste");
+;
                
 							
-			// salva primeiro por causa do relacionamento bidirecional
+			// salvamento em cascata, necessário primeiro salvar os relacionamentos filhos depois o pai
 			endereco = enderecoRepository.save(endereco);
 			paciente.setEndereco(endereco);
 			

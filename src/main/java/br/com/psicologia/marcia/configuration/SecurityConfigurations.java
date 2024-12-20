@@ -36,6 +36,7 @@ public class SecurityConfigurations {
 	                .requestMatchers(HttpMethod.POST,"/cadastro/paciente").permitAll()
 	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
 	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
+	                .requestMatchers(HttpMethod.GET, "/pacientes").permitAll()
 	                .anyRequest().authenticated()
                 
 //	            ).logout(logout -> logout
