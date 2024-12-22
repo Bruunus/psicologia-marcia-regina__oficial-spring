@@ -6,9 +6,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import br.com.psicologia.marcia.DTO.EnderecoRecord;
-import br.com.psicologia.marcia.DTO.PacienteRecord;
-import br.com.psicologia.marcia.DTO.QueixaRecord;
+import br.com.psicologia.marcia.DTO.endereco.EnderecoRecord;
+import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
+import br.com.psicologia.marcia.DTO.queixa.QueixaRecord;
 import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.repository.paciente.ReadPacienteRepository;
 
@@ -39,8 +39,8 @@ public class ReadPacienteService {
 					paciente.getQtdFilhos(),
 					paciente.getGrauEscolaridade(),
 					paciente.getProfissao(),
-					paciente.getPerfil(),
 					paciente.getStatusPaciente(),
+					paciente.getPerfil(),
 					new EnderecoRecord(
 							paciente.getEndereco().getId(),
 							paciente.getEndereco().getLogradouro(),

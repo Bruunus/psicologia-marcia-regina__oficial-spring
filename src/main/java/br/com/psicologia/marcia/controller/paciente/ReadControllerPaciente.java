@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.psicologia.marcia.DTO.PacienteRecord;
+import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
 import br.com.psicologia.marcia.service.paciente.ReadPacienteService;
 
 @RestController

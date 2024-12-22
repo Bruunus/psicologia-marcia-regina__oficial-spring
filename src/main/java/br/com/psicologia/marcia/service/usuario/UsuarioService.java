@@ -16,7 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
+import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.AccessUserManager;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.UserAccessRepository;

@@ -1,15 +1,18 @@
 package br.com.psicologia.marcia.model;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -47,6 +50,9 @@ public class Paciente {
 	
 	@Enumerated(EnumType.STRING)
 	private Perfil perfil;
+	
+	@OneToMany(mappedBy = "paciente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<Atendimento> atendimentos;
 	
 	@OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "endereco_id", referencedColumnName = "id")
@@ -193,7 +199,6 @@ public class Paciente {
 		this.queixa = queixa;
 	}
 	
-	
 	public Perfil getPerfil() {
 		return perfil;
 	}
@@ -201,6 +206,7 @@ public class Paciente {
 	public void setPerfil(Perfil perfil) {
 		this.perfil = perfil;
 	}
+	
 	
 	public StatusPaciente getStatusPaciente() {
 		return statusPaciente;
@@ -241,8 +247,7 @@ public class Paciente {
 				this.estadoCivil+" "+
 				this.filhos+" "+
 				this.grauEscolaridade+" "+
-				this.queixa+" "+
-				this.perfil+" ";
+				this.queixa+" ";
 	}
 
 	

@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.psicologia.marcia.DTO.AccessUserManagerRecord;
-import br.com.psicologia.marcia.DTO.DadosTokenJWT;
+import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
+import br.com.psicologia.marcia.DTO.autenticacao.DadosTokenJWT;
 import br.com.psicologia.marcia.JWT.TokenService;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.service.error.MessageError;

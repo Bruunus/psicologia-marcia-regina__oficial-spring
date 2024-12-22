@@ -1,15 +1,15 @@
 package br.com.psicologia.marcia.service.paciente;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import br.com.psicologia.marcia.DTO.PacienteRecord;
+import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
+import br.com.psicologia.marcia.model.Atendimento;
 import br.com.psicologia.marcia.model.Endereco;
 import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.model.Queixa;
 import br.com.psicologia.marcia.model.StatusPaciente;
+import br.com.psicologia.marcia.repository.atendimento.AtendimentoRepository;
 import br.com.psicologia.marcia.repository.paciente.CreatePacienteRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.EnderecoRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
@@ -23,6 +23,9 @@ public class CreatePacienteService {
 	
 	@Autowired
 	private CreatePacienteRepository createPacienteRepository;
+	
+	@Autowired
+	private AtendimentoRepository atendimentoRepository;
 	
 	@Autowired
 	private EnderecoRepository enderecoRepository;
@@ -58,10 +61,14 @@ public class CreatePacienteService {
 			paciente.setQtdFilhos(pacienteRecord.qtdFilhos());
 			paciente.setGrauEscolaridade(pacienteRecord.grauEscolaridade());
 			paciente.setProfissao(pacienteRecord.profissao());
-			paciente.setPerfil(pacienteRecord.perfil());
 			paciente.setStatusPaciente(StatusPaciente.ATIVADO);
+			paciente.setPerfil(pacienteRecord.perfil());
 			
-			System.out.println(pacienteRecord.dataNascimento());
+			
+			Atendimento pre_atendimento = new Atendimento();
+			
+			pre_atendimento.setDataUltimoAtendimento(null);
+			pre_atendimento.setPaciente(paciente);	 
 			
 			
 //					if (pacienteRecord.endereco() != null) {
@@ -78,10 +85,13 @@ public class CreatePacienteService {
  
 			Queixa queixa = new Queixa();
             queixa.setQueixa(pacienteRecord.queixa().queixa());  
-;
+
                
 							
 			// salvamento em cascata, necessário primeiro salvar os relacionamentos filhos depois o pai
+            
+            
+            
 			endereco = enderecoRepository.save(endereco);
 			paciente.setEndereco(endereco);
 			
@@ -90,6 +100,7 @@ public class CreatePacienteService {
 			
 			createPacienteRepository.save(paciente);
 			
+			pre_atendimento = atendimentoRepository.save(pre_atendimento);
 			
 			
 			System.out.println("Cadastro realizado com sucesso no servidor!");

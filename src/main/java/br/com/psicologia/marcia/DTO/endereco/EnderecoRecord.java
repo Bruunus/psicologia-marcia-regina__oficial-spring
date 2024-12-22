@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.DTO;
+package br.com.psicologia.marcia.DTO.endereco;
 
 public record EnderecoRecord(
 		Long id,

@@ -37,6 +37,7 @@ public class SecurityConfigurations {
 	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
 	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
 	                .requestMatchers(HttpMethod.GET, "/pacientes").permitAll()
+	                .requestMatchers(HttpMethod.GET,"/carregar-tela-home").permitAll()
 	                .anyRequest().authenticated()
                 
 //	            ).logout(logout -> logout

@@ -1,4 +1,7 @@
-package br.com.psicologia.marcia.DTO;
+package br.com.psicologia.marcia.DTO.paciente;
+
+import br.com.psicologia.marcia.DTO.endereco.EnderecoRecord;
+import br.com.psicologia.marcia.DTO.queixa.QueixaRecord;
 
 public class CadastroPacienteDTO {
 	
