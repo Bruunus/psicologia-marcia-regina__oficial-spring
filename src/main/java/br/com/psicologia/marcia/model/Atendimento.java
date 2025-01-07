@@ -29,6 +29,8 @@ public class Atendimento {
 
 	
 	
+	
+	
 	public LocalDate getDataUltimoAtendimento() {
 		return dataUltimoAtendimento;
 	}

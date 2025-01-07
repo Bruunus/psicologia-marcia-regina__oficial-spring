@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.psicologia.marcia.DTO.atendimento.ConsultaDTOCarregamentoTelaHome;
 import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
 import br.com.psicologia.marcia.service.paciente.ReadPacienteService;
 
@@ -21,15 +22,24 @@ public class ReadControllerPaciente {
 	
 	@Autowired
 	private ReadPacienteService readPacienteService;
+		
+	
+	@GetMapping("carregar-tela-home")
+	private ResponseEntity<List<ConsultaDTOCarregamentoTelaHome>> carregarDadosTelaHome() {
+		List<ConsultaDTOCarregamentoTelaHome> list = readPacienteService.carregarTelaHome();
+		return new ResponseEntity<>(list, HttpStatus.OK);
+	}
 
 	@GetMapping("search")
 	public ResponseEntity<?> pesquisaDePaciente(@RequestParam("name") String nome) {
 		return ResponseEntity.status(HttpStatus.OK).build();
 	}
 	
+	
 	@GetMapping("pacientes")
 	public ResponseEntity<List<PacienteRecord>> getPacientes() {
 		List<PacienteRecord> list = readPacienteService.carregarListaPaciente();
 		return new ResponseEntity<>(list, HttpStatus.OK);	
 	}
+	
 }
