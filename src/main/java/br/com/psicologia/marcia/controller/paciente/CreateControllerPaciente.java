@@ -17,14 +17,14 @@ import jakarta.validation.Valid;
 
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/paciente")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class CreateControllerPaciente {
 
 	@Autowired
 	private CreatePacienteService createPacienteService;
 	 
-	@PostMapping("cadastro/paciente")
+	@PostMapping("/cadastro")
 
 	public ResponseEntity<?> cadastroDePaciente(@Valid @RequestBody PacienteRecord pacienteRecord) {		
 			

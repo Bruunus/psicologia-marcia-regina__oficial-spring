@@ -23,6 +23,8 @@ public class ReadPacienteService {
 	
 	@Autowired
 	private AtendimentoRepository atendimentoRepository;
+
+ 
 	
 	
 	/**
@@ -39,45 +41,53 @@ public class ReadPacienteService {
 	
 	
 
-	public List<PacienteRecord> carregarListaPaciente() {	
+	/**
+	 * Este serviço é responsável por trazer o paciente solicitado para a tela de 
+	 * identificação
+	 * @param cpf
+	 * @return
+	 */
+	public PacienteRecord carregarPaciente(String cpf) {	
 		
-		List<PacienteRecord> listaPacientes = new ArrayList<>();
-		List<Paciente> list = readPacienteRepository.findAll();		
+		Paciente objetoPaciente = readPacienteRepository.findByCpf(cpf);
 		
-		list.forEach(paciente -> {
-			PacienteRecord pacienteRecord = new PacienteRecord(
-					paciente.getId(),
-					paciente.getNomeCompleto(),
-					paciente.getCpf(),
-					paciente.getEmail(),
-					paciente.getTelefone(),
-					paciente.getTelefoneContato(),
-					paciente.getIdade(),
-					paciente.getDataNascimento(),
-					paciente.getEstadoCivil(),
-					paciente.getFilhos(),
-					paciente.getQtdFilhos(),
-					paciente.getGrauEscolaridade(),
-					paciente.getProfissao(),
-					paciente.getStatusPaciente(),
-					paciente.getPerfil(),
+		if(objetoPaciente != null) {
+			return new PacienteRecord(
+					objetoPaciente.getId(),
+					objetoPaciente.getNomeCompleto(),
+					objetoPaciente.getResponsavel(),
+					objetoPaciente.getCpf(),
+					objetoPaciente.getRg(),
+					objetoPaciente.getEmail(),
+					objetoPaciente.getTelefone(),
+					objetoPaciente.getTelefoneContato(),
+					objetoPaciente.getNomeDoContato(),
+					objetoPaciente.getIdade(),
+					objetoPaciente.getDataNascimento(),
+					objetoPaciente.getEstadoCivil(),
+					objetoPaciente.getFilhos(),
+					objetoPaciente.getQtdFilhos(),
+					objetoPaciente.getGrauEscolaridade(),
+					objetoPaciente.getProfissao(),
+					objetoPaciente.getStatusPaciente(),
+					objetoPaciente.getPerfil(),
 					new EnderecoRecord(
-							paciente.getEndereco().getId(),
-							paciente.getEndereco().getLogradouro(),
-							paciente.getEndereco().getNumero(),
-							paciente.getEndereco().getComplemento(),
-							paciente.getEndereco().getBairro(),
-							paciente.getEndereco().getCidade(),
-							paciente.getEndereco().getUf(),
-							paciente.getEndereco().getCep()
+							objetoPaciente.getEndereco().getId(),
+							objetoPaciente.getEndereco().getLogradouro(),
+							objetoPaciente.getEndereco().getNumero(),
+							objetoPaciente.getEndereco().getComplemento(),
+							objetoPaciente.getEndereco().getBairro(),
+							objetoPaciente.getEndereco().getCidade(),
+							objetoPaciente.getEndereco().getUf(),
+							objetoPaciente.getEndereco().getCep()
 							),
-					new QueixaRecord(
-							paciente.getQueixa().getQueixa()
-							));
-			listaPacientes.add(pacienteRecord);
-		});		
+					new QueixaRecord(objetoPaciente.getQueixa().getQueixa())
+					);
+			
+		} else {
+			return null;	// verifique o nulo no controller
+		}		
 		
-		return listaPacientes;
 	}
 	
 	

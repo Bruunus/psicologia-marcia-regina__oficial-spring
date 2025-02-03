@@ -6,12 +6,13 @@ import br.com.psicologia.marcia.model.Perfil;
 
 public class ConsultaDTOCarregamentoTelaHome {
 	
-	
+ 
 	private LocalDate dataUltimoAtendimento;
 	private Long id;
     private String nomeCompleto;
     private String cpf;
     private Perfil perfil;
+    private Short idade;
  
 	
 	// 	dados para o JOIN
@@ -22,12 +23,14 @@ public class ConsultaDTOCarregamentoTelaHome {
 	 * um JOIN com paciente
 	 * @param paciente
 	 */
-	public ConsultaDTOCarregamentoTelaHome(LocalDate dataUltimoAtendimento, Long id, String nomeCompleto, String cpf, Perfil perfil) {
+	public ConsultaDTOCarregamentoTelaHome(LocalDate dataUltimoAtendimento, Long id, String nomeCompleto, String cpf, Perfil perfil,
+			Short idade) {
         this.dataUltimoAtendimento = dataUltimoAtendimento;
         this.id = id;
         this.nomeCompleto = nomeCompleto;
         this.cpf = cpf;
         this.perfil = perfil;
+        this.idade = idade;
     }
 
 	
@@ -79,6 +82,14 @@ public class ConsultaDTOCarregamentoTelaHome {
 
 	public void setPerfil(Perfil perfil) {
 		this.perfil = perfil;
+	}
+	
+	public Short getIdade() {
+		return idade;
+	}
+	
+	public void setIdade(Short idade) {
+		this.idade = idade;
 	}
 	
 	

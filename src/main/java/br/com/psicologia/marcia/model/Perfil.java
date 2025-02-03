@@ -2,7 +2,7 @@ package br.com.psicologia.marcia.model;
 
 public enum Perfil {
 	PSICOLOGIA,
-	PSICOTERAPIA;
+	NEUROPSICOLOGIA;
 	
 	/**
 	 * Formatação em representatividade para o usuário
@@ -14,7 +14,7 @@ public enum Perfil {
     }
 	
 //	System.out.println(Perfil.PSICOLOGIA.getFormattedName()); // Saída: Psicologia
-//    System.out.println(Perfil.PSICOTERAPIA.getFormattedName()); // Saída: Psicoterapia
+//    System.out.println(Perfil.NEUROPSICOLOGIA.getFormattedName()); // Saída: Psicoterapia
 	
 	
 }

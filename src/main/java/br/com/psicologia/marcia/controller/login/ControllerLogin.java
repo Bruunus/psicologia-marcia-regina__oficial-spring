@@ -23,7 +23,7 @@ import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/auth")
 //@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ControllerLogin {
 
@@ -42,7 +42,7 @@ public class ControllerLogin {
 	
 	
 	
-	@PostMapping("login")
+	@PostMapping("/login")
 	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados) {
 
 	    // Verifique se o usuário existe antes de tentar autenticar
@@ -87,7 +87,7 @@ public class ControllerLogin {
 
 	
 	
-	@PostMapping("deslogar")
+	@PostMapping("/deslogar")
 	public ResponseEntity<?> deslogar(@RequestBody AccessUserManagerRecord usuario) {
 		String login = usuario.login();
 		System.out.println("Usuario que chegou no controller: "+login);
@@ -99,7 +99,7 @@ public class ControllerLogin {
 	
 	
 	
-	@PostMapping("status-login")
+	@PostMapping("/status-login")
 	public ResponseEntity<?> statusDeAutenticacaoDeUsuario(@RequestBody AccessUserManagerRecord usuario) {
 		// verificar no banco esse nome e busco pelo status do login e retorne bolean
 		System.out.println("Entrado em 'status logins => Valor do request: "+usuario);
@@ -115,7 +115,7 @@ public class ControllerLogin {
 		 
 	}
 	
-	@GetMapping("status-update")
+	@GetMapping("/status-update")
 	public ResponseEntity<?> verificacaoDeStatusPollingDeUsuario() {
 	 
 		boolean statusLogin = userService.statusUpdateService();
@@ -131,7 +131,7 @@ public class ControllerLogin {
 	
 	
 	
-	@PostMapping("register")
+	@PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Usuario user) {
 		
 		System.out.println(user);

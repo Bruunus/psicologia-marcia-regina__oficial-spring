@@ -26,13 +26,19 @@ public class Paciente {
 	
 	private String nomeCompleto;
 	
+	private String responsavel;
+	
 	private String cpf;
+	
+	private String rg;
 	
 	private String email;
 	
 	private String telefone;
 	
 	private String telefoneContato;
+	
+	private String nomeDoContato;
 	
 	private Short idade;
 	
@@ -232,16 +238,51 @@ public class Paciente {
 		this.qtdFilhos = qtdFilhos;
 	}
 	
-	
+
+	public String getResponsavel() {
+		return responsavel;
+	}
+
+	public void setResponsavel(String responsavel) {
+		this.responsavel = responsavel;
+	}
+
+	public String getRg() {
+		return rg;
+	}
+
+	public void setRg(String rg) {
+		this.rg = rg;
+	}
+
+	public String getNomeDoContato() {
+		return nomeDoContato;
+	}
+
+	public void setNomeDoContato(String nomeDoContato) {
+		this.nomeDoContato = nomeDoContato;
+	}
+
+	public List<Atendimento> getAtendimentos() {
+		return atendimentos;
+	}
+
+	public void setAtendimentos(List<Atendimento> atendimentos) {
+		this.atendimentos = atendimentos;
+	}
+
 	
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
 		return 	this.id+" "+
 				this.nomeCompleto+" "+
+				this.responsavel+" "+
 				this.cpf+" "+
+				this.rg+" "+
 				this.email+" "+
 				this.telefone+" "+
+				this.nomeDoContato+" "+
 				this.idade+" "+
 				this.dataNascimento+" "+
 				this.estadoCivil+" "+
@@ -249,7 +290,6 @@ public class Paciente {
 				this.grauEscolaridade+" "+
 				this.queixa+" ";
 	}
-
 	
 
 	

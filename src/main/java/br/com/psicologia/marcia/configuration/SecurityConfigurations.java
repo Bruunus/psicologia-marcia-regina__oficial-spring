@@ -29,27 +29,35 @@ public class SecurityConfigurations {
 				.csrf(csrf -> csrf.disable())
 				.cors(cors -> cors.disable())
 	            .authorizeHttpRequests(auth -> auth
-	                .requestMatchers(HttpMethod.POST,"/login").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/register").permitAll() 
-	                .requestMatchers(HttpMethod.POST,"/deslogar").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/status-login").permitAll() 
-	                .requestMatchers(HttpMethod.POST,"/cadastro/paciente").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
-	                .requestMatchers(HttpMethod.GET,"/status-update").permitAll()
-	                .requestMatchers(HttpMethod.GET, "/pacientes").permitAll()
-	                .requestMatchers(HttpMethod.GET,"/carregar-tela-home").permitAll()
+//	            	Autenticação
+	                .requestMatchers(HttpMethod.POST,"/auth/login").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/auth/register").permitAll() 
+	                .requestMatchers(HttpMethod.POST,"/auth/deslogar").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/auth/status-login").permitAll()
+	                .requestMatchers(HttpMethod.GET,"/auth/status-update").permitAll()
+	                
+//	                 Paciente
+	                .requestMatchers(HttpMethod.POST,"/paciente/cadastro").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/paciente/carregar-dados").permitAll()
+	                .requestMatchers(HttpMethod.GET,"/paciente/carregar-tela-home").permitAll()
+	                .requestMatchers(HttpMethod.GET,"/paciente/search").permitAll()
+	                .requestMatchers(HttpMethod.POST,"/paciente/carregar-dados").permitAll()
+ 
+	                
+	                
+//	                .requestMatchers(HttpMethod.POST, "/paciente").permitAll()
+//	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
+	                
+	                
+//	                Suporte app
+	                .requestMatchers(HttpMethod.POST, "/ocorrencia/registrar").permitAll()
+	                .requestMatchers(HttpMethod.POST, "/ocorrencia/registrar").permitAll()
+	                .requestMatchers(HttpMethod.GET, "/ocorrencia/carregar").permitAll()
+	                .requestMatchers(HttpMethod.DELETE, "/ocorrencia/finalizar").permitAll()
+	                
 	                .anyRequest().authenticated()
                 
-//	            ).logout(logout -> logout
-//	                    .logoutUrl("/logout")
-//	                    .addLogoutHandler((request, response, authentication) -> {
-//	                    	String login = request.getParameter("login");
-//	                        System.out.println(login);
-////	                        userService.deslogar(login);
-//	                    })
-//	                    .logoutSuccessHandler((request, response, authentication) -> {
-//	                        response.setStatus(HttpServletResponse.SC_OK);
-//	                    })
+
 	            ).build();
 				       
     }

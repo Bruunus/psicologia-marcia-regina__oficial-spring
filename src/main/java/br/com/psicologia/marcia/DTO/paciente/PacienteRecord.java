@@ -12,10 +12,13 @@ public record PacienteRecord(
 		
 		Long id,
 		String nomeCompleto, 
+		String responsavel,
 		String cpf, 
+		String rg,
 		String email, 
 		String telefone,
 		String telefoneContato,
+		String nomeDoContato,
 		Short idade, 
 		LocalDate dataNascimento, 
 		String estadoCivil, 

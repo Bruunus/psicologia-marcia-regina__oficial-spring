@@ -50,10 +50,13 @@ public class CreatePacienteService {
 			Paciente paciente = new Paciente();				
 			
 			paciente.setNomeCompleto(pacienteRecord.nomeCompleto());
+			paciente.setResponsavel(pacienteRecord.responsavel());
 			paciente.setCpf(pacienteRecord.cpf());
+			paciente.setRg(pacienteRecord.rg());
 			paciente.setEmail(pacienteRecord.email());
 			paciente.setTelefone(pacienteRecord.telefone());
 			paciente.setTelefoneContato(pacienteRecord.telefoneContato());
+			paciente.setNomeDoContato(pacienteRecord.nomeDoContato());
 			paciente.setIdade(pacienteRecord.idade());
 			paciente.setDataNascimento(pacienteRecord.dataNascimento());
 			paciente.setEstadoCivil(pacienteRecord.estadoCivil());
