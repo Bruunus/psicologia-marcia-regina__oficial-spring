@@ -27,7 +27,7 @@ public class ReadControllerPaciente {
 		
 	
 	@GetMapping("/carregar-tela-home")
-	private ResponseEntity<List<ConsultaDTOCarregamentoTelaHome>> carregarDadosTelaHome() {
+	public ResponseEntity<List<ConsultaDTOCarregamentoTelaHome>> carregarDadosTelaHome() {
 		List<ConsultaDTOCarregamentoTelaHome> list = readPacienteService.carregarTelaHome();
 		return new ResponseEntity<>(list, HttpStatus.OK);
 	}

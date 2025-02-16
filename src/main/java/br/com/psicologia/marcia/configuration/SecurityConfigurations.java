@@ -42,6 +42,7 @@ public class SecurityConfigurations {
 	                .requestMatchers(HttpMethod.GET,"/paciente/carregar-tela-home").permitAll()
 	                .requestMatchers(HttpMethod.GET,"/paciente/search").permitAll()
 	                .requestMatchers(HttpMethod.POST,"/paciente/carregar-dados").permitAll()
+	                .requestMatchers(HttpMethod.PUT, "/paciente/atualizar").permitAll()
  
 	                
 	                
