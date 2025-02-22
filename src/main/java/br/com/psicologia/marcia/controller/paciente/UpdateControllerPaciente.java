@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
+import br.com.psicologia.marcia.DTO.paciente.PacienteUpdateRecord;
 import br.com.psicologia.marcia.service.paciente.UpdatePacienteService;
 
 @RestController
@@ -21,8 +22,8 @@ public class UpdateControllerPaciente {
 	
 	
 	@PutMapping("/atualizar")
-	public ResponseEntity<?> atualizarPaciente(@RequestBody PacienteRecord pacienteRecord) {
-		PacienteRecord pacienteAtualizado = updatePacienteService.updatePatient(pacienteRecord);
+	public ResponseEntity<?> atualizarPaciente(@RequestBody PacienteUpdateRecord pacienteRecord) {
+		PacienteUpdateRecord pacienteAtualizado = updatePacienteService.updatePatient(pacienteRecord);
 		return ResponseEntity.ok(pacienteAtualizado);
 	}
 	

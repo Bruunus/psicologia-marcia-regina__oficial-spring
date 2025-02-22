@@ -43,6 +43,14 @@ public class Queixa {
 	public void setPaciente(Paciente paciente) {
 		this.paciente = paciente;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
 	
 	
 	

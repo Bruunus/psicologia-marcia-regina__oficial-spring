@@ -81,7 +81,9 @@ public class ReadPacienteService {
 							objetoPaciente.getEndereco().getUf(),
 							objetoPaciente.getEndereco().getCep()
 							),
-					new QueixaRecord(objetoPaciente.getQueixa().getQueixa())
+					new QueixaRecord(
+							objetoPaciente.getId(),
+							objetoPaciente.getQueixa().getQueixa())
 					);
 			
 		} else {
