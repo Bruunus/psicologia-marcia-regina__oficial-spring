@@ -5,9 +5,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -22,6 +24,27 @@ public class SecurityConfigurations {
 //	public void setUserService(UsuarioService userService) {
 //        this.userService = userService;
 //    }
+	
+//	Implementação do filter para controlar as requisições - (Mais vou fazer a aula do spring security primeiro
+	
+//	@Bean
+//	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//	    return http
+//	            .csrf(csrf -> csrf.disable())
+//	            .cors(cors -> cors.disable())
+//	            .authorizeHttpRequests(auth -> auth
+//	                // Apenas as rotas de login e registro são públicas
+//	                .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+//	                .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+//
+//	                // Todas as outras rotas exigem autenticação
+//	                .anyRequest().authenticated()
+//	            )
+//	            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Define JWT como stateless
+//	            .addFilterBefore(new JwtRequestFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class) // Adiciona o filtro JWT
+//	            .build();
+//	}
+
 
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
