@@ -53,6 +53,7 @@ public class CreatePacienteService {
 			paciente.setResponsavel(pacienteRecord.responsavel());
 			paciente.setCpf(pacienteRecord.cpf());
 			paciente.setRg(pacienteRecord.rg());
+			paciente.setOrgaoSsp(pacienteRecord.orgaoSsp());
 			paciente.setEmail(pacienteRecord.email());
 			paciente.setTelefone(pacienteRecord.telefone());
 			paciente.setTelefoneContato(pacienteRecord.telefoneContato());

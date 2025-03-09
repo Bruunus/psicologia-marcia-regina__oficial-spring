@@ -58,6 +58,7 @@ public class ReadPacienteService {
 					objetoPaciente.getResponsavel(),
 					objetoPaciente.getCpf(),
 					objetoPaciente.getRg(),
+					objetoPaciente.getOrgaoSsp(),
 					objetoPaciente.getEmail(),
 					objetoPaciente.getTelefone(),
 					objetoPaciente.getTelefoneContato(),

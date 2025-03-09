@@ -12,6 +12,7 @@ public record PacienteUpdateRecord(
 		String responsavel,
 		String cpf, 
 		String rg,
+		String orgaoSsp,
 		String email, 
 		String telefone,
 		String telefoneContato,

@@ -47,6 +47,7 @@ public class UpdatePacienteService {
 		paciente.setResponsavel(pacienteUpdateRecord.responsavel());
 		paciente.setCpf(pacienteUpdateRecord.cpf());
 		paciente.setRg(pacienteUpdateRecord.rg());
+		paciente.setOrgaoSsp(pacienteUpdateRecord.orgaoSsp());
 		paciente.setEmail(pacienteUpdateRecord.email());
 		paciente.setTelefone(pacienteUpdateRecord.telefone());
 		paciente.setTelefoneContato(pacienteUpdateRecord.telefoneContato());
@@ -100,6 +101,7 @@ public class UpdatePacienteService {
 		        paciente.getResponsavel(), 
 		        paciente.getCpf(), 
 		        paciente.getRg(), 
+		        paciente.getOrgaoSsp(),
 		        paciente.getEmail(), 
 		        paciente.getTelefone(), 
 		        paciente.getTelefoneContato(), 

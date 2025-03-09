@@ -32,6 +32,8 @@ public class Paciente {
 	
 	private String rg;
 	
+	private String orgaoSsp;
+	
 	private String email;
 	
 	private String telefone;
@@ -289,6 +291,14 @@ public class Paciente {
 				this.filhos+" "+
 				this.grauEscolaridade+" "+
 				this.queixa+" ";
+	}
+
+	public String getOrgaoSsp() {
+		return orgaoSsp;
+	}
+
+	public void setOrgaoSsp(String orgaoSsp) {
+		this.orgaoSsp = orgaoSsp;
 	}
 	
 
