@@ -47,6 +47,9 @@ public class ReadControllerPaciente {
 	public ResponseEntity<Object>  getPacientes(@RequestBody String cpf) {
 		
 		try {
+			
+//			Thread.sleep(8000); 
+			
 			PacienteRecord paciente = readPacienteService.carregarPaciente(cpf);
 			
 			if(paciente == null) {
