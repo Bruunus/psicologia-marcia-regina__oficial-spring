@@ -1,68 +1,94 @@
 package br.com.psicologia.marcia.security;
 
-import java.io.IOException;
-
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import br.com.psicologia.marcia.model.Usuario;
-import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
+import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-// Este filtro é executado uma vez por requisição e serve para interceptar e validar o token JWT
+import java.io.IOException;
+
+/**
+ * Filtro JWT que intercepta todas as requisições HTTP para validar o token JWT,
+ * autenticar o usuário e verificar se ele ainda está com sessão ativa.
+ */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
-    private final UsuarioRepository usuarioRepository;
+    private final UsuarioService usuarioService;
+    private final GerenciadorDeAcessoDeUsuarioRepository acessoRepo;
 
-    // Construtor que injeta os serviços necessários para validar o token e buscar o usuário
-    public JwtAuthenticationFilter(TokenService tokenService, UsuarioRepository usuarioRepository) {
+    /**
+     * Construtor para injeção de dependências.
+     */
+    public JwtAuthenticationFilter(TokenService tokenService,
+                                   UsuarioService usuarioService,
+                                   GerenciadorDeAcessoDeUsuarioRepository acessoRepo) {
         this.tokenService = tokenService;
-        this.usuarioRepository = usuarioRepository;
+        this.usuarioService = usuarioService;
+        this.acessoRepo = acessoRepo;
     }
 
-    // Método principal que intercepta todas as requisições
+    /**
+     * Método que intercepta todas as requisições e aplica a lógica de autenticação via JWT.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         // Extrai o token do cabeçalho Authorization
         String token = recuperarToken(request);
 
-        if (token != null) {
-            // Extrai o login (subject) de dentro do token
-            String login = tokenService.getSubject(token);
+        // Verifica se o token está presente e válido
+        if (token != null && !token.isBlank()) {
+            try {
+                // Extrai o login (username) do token
+                String login = tokenService.getSubject(token);
 
-            // Busca o usuário no banco de dados com base no login
-            Usuario usuario = (Usuario) usuarioRepository.findBylogin(login);
+                // Verifica no banco se o usuário está logado (status_login = 1)
+                boolean usuarioLogado = acessoRepo.existsByNomeAndStatusLogin(login, true);
 
-            if (usuario != null) {
-                // Cria um objeto de autenticação com as permissões do usuário
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        usuario,
-                        null,
-                        usuario.getAuthorities()
-                );
+                if (usuarioLogado) {
+                    // Carrega os dados do usuário
+                    UserDetails userDetails = usuarioService.loadUserByUsername(login);
 
-                // Define o usuário autenticado no contexto de segurança
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    // Cria a autenticação e insere no contexto de segurança
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+
+                    // Log opcional
+                    System.out.println("Usuário autenticado via filtro: " + login + " | Token: " + token);
+
+                } else {
+                    throw new RuntimeException("Usuário deslogado no banco. Acesso negado.");
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException("Token JWT inválido ou expirado!", e);
             }
         }
 
-        // Segue o fluxo da requisição normalmente
         filterChain.doFilter(request, response);
     }
 
-    // Método auxiliar para recuperar o token do cabeçalho HTTP
+    /**
+     * Extrai o token JWT do cabeçalho Authorization.
+     */
     private String recuperarToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7); // Remove o "Bearer " do início
+            return authHeader.replace("Bearer ", "");
         }
         return null;
     }

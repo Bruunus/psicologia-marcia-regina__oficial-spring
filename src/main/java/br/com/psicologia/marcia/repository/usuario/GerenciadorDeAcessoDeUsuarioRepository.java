@@ -52,7 +52,8 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 			);
 	 
 	
-	boolean existsByLoginAndStatusLogin(String nome, Boolean status_login);
+	boolean existsByNomeAndStatusLogin(String nome, Boolean status_login);
+
 
 
  

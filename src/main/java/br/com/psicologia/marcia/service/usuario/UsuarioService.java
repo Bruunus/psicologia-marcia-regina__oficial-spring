@@ -1,14 +1,9 @@
 package br.com.psicologia.marcia.service.usuario;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -50,8 +45,12 @@ public class UsuarioService implements UserDetailsService {
 	private AccessUserManagerRecord login;
 	
 	 
+	public UsuarioService(UsuarioRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 	 
 
+ 
 	
 	public boolean registrarUsuario(Usuario user) {
 		
