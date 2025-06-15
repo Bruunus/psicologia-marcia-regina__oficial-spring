@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "gerenciador_de_acesso_de_usuario")
-public class AccessUserManager {
+public class GerenciadorDeAcessoDeUsuario {
 	
 	
 	@Id

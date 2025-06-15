@@ -17,9 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
-import br.com.psicologia.marcia.model.AccessUserManager;
+import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 import br.com.psicologia.marcia.model.Usuario;
-import br.com.psicologia.marcia.repository.usuario.UserAccessRepository;
+import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
 import br.com.psicologia.marcia.service.error.MessageError;
 
@@ -37,7 +37,7 @@ public class UsuarioService implements UserDetailsService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 	
 	@Autowired
-	private UserAccessRepository userAccessRepository;
+	private GerenciadorDeAcessoDeUsuarioRepository gerenciadorDeAcessoDeUsuarioRepository;
 	
 	@Autowired
 	private UsuarioRepository usuarioRepositoty;
@@ -62,11 +62,11 @@ public class UsuarioService implements UserDetailsService {
         	user.setSenha(bCryptPasswordEncoder.encode(user.getPassword()));
         	userRepository.save(user);
         	
-        	AccessUserManager usuarioGerenciavel = new AccessUserManager();
+        	GerenciadorDeAcessoDeUsuario usuarioGerenciavel = new GerenciadorDeAcessoDeUsuario();
         	usuarioGerenciavel.setNome(user.getLogin());
         	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
 //        	usuarioGerenciavel.setTime_stamp(LocalDateTime.now());
-        	userAccessRepository.save(usuarioGerenciavel);
+        	gerenciadorDeAcessoDeUsuarioRepository.save(usuarioGerenciavel);
         	
         	return false;
         }
@@ -97,15 +97,12 @@ public class UsuarioService implements UserDetailsService {
 	}
 	
 	
-	@Bean
-	AuthenticationManager authenticationManager (AuthenticationConfiguration configuration) throws Exception {
-		return configuration.getAuthenticationManager();
-	}
+	
 	
 	
 	public boolean verificarStatusAutenticacao(String usuarioLogin) {
 		// procura o usuario no banco de dados com base na coluna status_login
-		Boolean verificarUsuarioLogado = userAccessRepository.statusLoginUsuario(usuarioLogin);
+		Boolean verificarUsuarioLogado = gerenciadorDeAcessoDeUsuarioRepository.statusLoginUsuario(usuarioLogin);
 		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
 		
 		if(verificarUsuarioLogado) {
@@ -117,7 +114,7 @@ public class UsuarioService implements UserDetailsService {
 		} else {
 			// verifica se é false = 0 ---->>> se for então então pode atualizar pra 1 e retorna true 
 			System.out.println("Esse usuário está logado agora !");			
-			userAccessRepository.updateAcessoDeUsuario(
+			gerenciadorDeAcessoDeUsuarioRepository.updateAcessoDeUsuario(
 					usuarioLogin,
 					true,
 					LocalDateTime.now());
@@ -134,7 +131,7 @@ public class UsuarioService implements UserDetailsService {
 	 */
 	public boolean validacaoDeLogin(String loginHttp) {
 		System.out.println("Valor da pesquisa: "+loginHttp);
-		String usuario = userAccessRepository.procurarPorNome(loginHttp);
+		String usuario = gerenciadorDeAcessoDeUsuarioRepository.procurarPorNome(loginHttp);
 		if(usuario == null || usuario.equals("")) {
 			return true;
 		} else {
@@ -151,7 +148,7 @@ public class UsuarioService implements UserDetailsService {
 	 */
 	public boolean statusLogin(AccessUserManagerRecord loginHttp) {
 		String login = loginHttp.login();
-		Boolean statusLogin = userAccessRepository.statusLoginUsuario(login);
+		Boolean statusLogin = gerenciadorDeAcessoDeUsuarioRepository.statusLoginUsuario(login);
 		if(statusLogin) {
 			return true;
 		} else {
@@ -173,7 +170,7 @@ public class UsuarioService implements UserDetailsService {
 		System.out.println("Usuário a se deslogar: "+username);
 		deslogar(username);	
 		
-		AccessUserManager findByNome = userAccessRepository.findByNome(username);
+		GerenciadorDeAcessoDeUsuario findByNome = gerenciadorDeAcessoDeUsuarioRepository.findByNome(username);
 		Boolean statusLogin = findByNome.getStatusLogin();
 		
 		System.out.println("Status desse usuário após deslogar: "+statusLogin);
@@ -194,9 +191,9 @@ public class UsuarioService implements UserDetailsService {
 	 */
 	public void deslogar(String usuarioRequest) {		
 //		String user = usuario.login();		 
-		AccessUserManager findByNome = userAccessRepository.findByNome(usuarioRequest);
+		GerenciadorDeAcessoDeUsuario findByNome = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioRequest);
 		String usuario = findByNome.getNome();
-		userAccessRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());		
+		gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());		
 //		System.out.println("Usário que vai se deslogar: "+usuario);
 	}
 	
@@ -204,33 +201,12 @@ public class UsuarioService implements UserDetailsService {
         return new AccessUserManagerRecord(login);
     }
 	
-	
-//	@Bean
-//	BCryptPasswordEncoder bCryptPasswordEncoder() {
-//	    return new BCryptPasswordEncoder();
-//	}
-    
+
 	 
 	
 	
 	 
 	
-	 
-    
-	
-//	@Override
-//	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-//	    Usuario user = userRepository.findBylogin(username)
-//	            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//	    return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(), 
-//	            Arrays.asList(new SimpleGrantedAuthority(user.getRole())));
-//	}
-    
-    
-//    @Bean
-//    PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
+
     
 }

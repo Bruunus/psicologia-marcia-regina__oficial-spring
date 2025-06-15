@@ -9,10 +9,10 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.psicologia.marcia.model.AccessUserManager;
+import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 
 @Repository
-public interface UserAccessRepository extends JpaRepository<AccessUserManager, Long> {
+public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<GerenciadorDeAcessoDeUsuario, Long> {
 
 	
 //	@Query(value = "SELECT * FROM reserva r INNER JOIN data d ON r.id = d.reserva_id WHERE MONTH(d.data_retirada) = :mes AND status = 'FINALIZADA'", nativeQuery = true)
@@ -21,7 +21,7 @@ public interface UserAccessRepository extends JpaRepository<AccessUserManager, L
 	@Query(value = "SELECT status_login FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
 	Boolean statusLoginUsuario(@Param("usuarioLogin") String usuarioLogin);
 
-	AccessUserManager findByNome(String usuarioLogin);
+	GerenciadorDeAcessoDeUsuario findByNome(String usuarioLogin);
 	
 	@Query(value = "SELECT nome FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
 	String procurarPorNome(@Param("usuarioLogin") String usuarioLogin);
@@ -51,6 +51,9 @@ public interface UserAccessRepository extends JpaRepository<AccessUserManager, L
 			@Param("ultimo_logout") LocalDateTime ultimo_logout
 			);
 	 
+	
+	boolean existsByLoginAndStatusLogin(String nome, Boolean status_login);
+
 
  
 

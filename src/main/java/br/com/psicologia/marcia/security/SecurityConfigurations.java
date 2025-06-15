@@ -1,121 +1,101 @@
-package br.com.psicologia.marcia.configuration;
+package br.com.psicologia.marcia.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+
+/**
+ * Classe de configuração do Spring Security com autenticação JWT.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfigurations {
-
-//	Configuração de logout
-//	@Autowired
-//    @Lazy
-//	private UsuarioService userService;
 	
-//	@Autowired
-//	public void setUserService(UsuarioService userService) {
-//        this.userService = userService;
-//    }
-	
-//	Implementação do filter para controlar as requisições - (Mais vou fazer a aula do spring security primeiro
-	
-//	@Bean
-//	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//	    return http
-//	            .csrf(csrf -> csrf.disable())
-//	            .cors(cors -> cors.disable())
-//	            .authorizeHttpRequests(auth -> auth
-//	                // Apenas as rotas de login e registro são públicas
-//	                .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-//	                .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
-//
-//	                // Todas as outras rotas exigem autenticação
-//	                .anyRequest().authenticated()
-//	            )
-//	            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Define JWT como stateless
-//	            .addFilterBefore(new JwtRequestFilter(jwtUtil, userDetailsService), UsernamePasswordAuthenticationFilter.class) // Adiciona o filtro JWT
-//	            .build();
-//	}
+	private final TokenService tokenService;
+    private final UsuarioRepository usuarioRepository;
 
-
+    /**
+     * Construtor com injeção de dependências necessárias para o filtro JWT.
+     *
+     * @param tokenService Serviço de token JWT
+     * @param usuarioRepository Repositório de usuários
+     */
+    public SecurityConfigurations(TokenService tokenService, UsuarioRepository usuarioRepository) {
+        this.tokenService = tokenService;
+        this.usuarioRepository = usuarioRepository;
+    }
+	
+    
+    
+    /**
+     * Configuração da cadeia de filtros de segurança e permissões das rotas.
+     *
+     * @param http Configuração HTTP do Spring Security
+     * @return SecurityFilterChain Cadeia de filtros de segurança
+     * @throws Exception
+     */
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
 				.csrf(csrf -> csrf.disable())
 				.cors(cors -> cors.disable())
-	            .authorizeHttpRequests(auth -> auth
-//	            	Autenticação
-	                .requestMatchers(HttpMethod.POST,"/auth/login").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/auth/register").permitAll() 
-	                .requestMatchers(HttpMethod.POST,"/auth/deslogar").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/auth/status-login").permitAll()
-	                .requestMatchers(HttpMethod.GET,"/auth/status-update").permitAll()
-	                
-//	                 Paciente
-	                .requestMatchers(HttpMethod.POST,"/paciente/cadastro").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/paciente/carregar-dados").permitAll()
-	                .requestMatchers(HttpMethod.GET,"/paciente/carregar-tela-home").permitAll()
-	                .requestMatchers(HttpMethod.GET,"/paciente/search").permitAll()
-	                .requestMatchers(HttpMethod.POST,"/paciente/carregar-dados").permitAll()
-	                .requestMatchers(HttpMethod.PUT, "/paciente/atualizar").permitAll()
- 
-	                
-	                
-//	                .requestMatchers(HttpMethod.POST, "/paciente").permitAll()
-//	                .requestMatchers(HttpMethod.POST,"/teste").permitAll()	// para testes
-	                
-	                
-//	                Suporte app
-	                .requestMatchers(HttpMethod.POST, "/ocorrencia/registrar").permitAll()
-	                .requestMatchers(HttpMethod.POST, "/ocorrencia/registrar").permitAll()
-	                .requestMatchers(HttpMethod.GET, "/ocorrencia/carregar").permitAll()
-	                .requestMatchers(HttpMethod.DELETE, "/ocorrencia/finalizar").permitAll()
-	                
-	                .anyRequest().authenticated()
-                
+				.authorizeHttpRequests(auth -> auth
+		                .requestMatchers(
+		                		"/auth/login", 
+		                		"/auth/register", 
+		                		"/auth/deslogar", 
+		                		"/auth/status-login", 
+		                		"/auth/status-update"
+		                		).permitAll()
+		                .anyRequest().authenticated()
+				
+//				Ativar para quando houver limpeza da tabela de usuarios para poder pelo menos criar um usuario ADMIN
+//				.authorizeHttpRequests(auth -> auth
+//					    .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+//					    .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+//					    .anyRequest().authenticated()
+					
 
-	            ).build();
+		            )
+		            .addFilterBefore(new JwtAuthenticationFilter(tokenService, usuarioRepository),
+		                    UsernamePasswordAuthenticationFilter.class)
+		            .build();
 				       
+    }
+	
+	
+	/**
+     * Bean responsável por instanciar o AuthenticationManager padrão.
+     *
+     * @param configuration Configuração automática do Spring Security
+     * @return AuthenticationManager
+     * @throws Exception
+     */
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
 	
-	
-//	Para o caso de verificar no banco as senhas encriptadas
-	@Bean
+    /**
+     * Bean responsável por criptografar senhas usando o algoritmo BCrypt.
+     *
+     * @return PasswordEncoder Codificador de senhas
+     */
+    @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-	
-	
-//	Para o caso de não ter que codificar a senha, isso avisa o spring security
-//	@Bean
-//    PasswordEncoder passwordEncoder() {
-//        return NoOpPasswordEncoder.getInstance();
-//    }
-	
-	
-	
-//	@Bean
-//	UrlBasedCorsConfigurationSource corsConfigurationSource() {
-//	    CorsConfiguration configuration = new CorsConfiguration();
-//	    configuration.setAllowedOrigins(Arrays.asList("*"));
-//	    configuration.setAllowedMethods(Arrays.asList("GET", "POST","DELETE","UPDATE"));
-//	    
-//	    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//	    source.registerCorsConfiguration("/**", configuration);
-//	    
-//	    return source;
-//	}
-	
-	
 	
 	
 }

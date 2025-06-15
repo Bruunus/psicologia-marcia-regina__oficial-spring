@@ -29,9 +29,11 @@ public class Usuario implements UserDetails {
 	private String login;
 	@NotNull
 	private String senha;
+
+	private String role;
 	
 //	@OneToOne(mappedBy = "usuario")
-//	private AccessUserManager accessUserManager;
+//	private GerenciadorDeAcessoDeUsuario accessUserManager;
 	
 	
 	
@@ -59,11 +61,26 @@ public class Usuario implements UserDetails {
 		this.senha = senha;
 	}
 	
+	public String getRole() {
+		return role;
+	}
 	
+	public void setRole(String role) {
+		this.role = role;
+	}
+	
+	
+	/**
+	 * Retorna as permissões (authorities) do usuário com base no perfil (role) armazenado.
+	 * O Spring Security exige que cada autoridade seja precedida por "ROLE_".
+	 * 
+	 * Perfis existentes até o momento: usuario e admin
+	 *
+	 * @return Collection com uma única autoridade do tipo ROLE_USER ou ROLE_ADMIN
+	 */
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		// TODO Auto-generated method stub
-		return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+		return List.of(new SimpleGrantedAuthority("ROLE_"+this.role.toUpperCase()));
 	}
 	
 	@Override

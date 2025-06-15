@@ -6,8 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
 import br.com.psicologia.marcia.DTO.autenticacao.DadosTokenJWT;
-import br.com.psicologia.marcia.JWT.TokenService;
 import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.security.TokenService;
 import br.com.psicologia.marcia.service.error.MessageError;
 import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.validation.Valid;
@@ -66,7 +65,8 @@ public class ControllerLogin {
 	            } else {
 	                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
 	                var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
-	                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario));
+	                var perfil = ((Usuario) autenticacao.getPrincipal()).getRole();
+	                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario, perfil));
 	            }
 	        } else {
 	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -88,12 +88,13 @@ public class ControllerLogin {
 	
 	
 	@PostMapping("/deslogar")
-	public ResponseEntity<?> deslogar(@RequestBody AccessUserManagerRecord usuario) {
-		String login = usuario.login();
-		System.out.println("Usuario que chegou no controller: "+login);
-		userService.deslogar(login);
-		return ResponseEntity.ok("{\"message\": \"Usuário deslogado !\"}");
+	public ResponseEntity<?> deslogar(Authentication authentication) {
+	    String login = authentication.getName();
+	    System.out.println("Usuário autenticado que vai deslogar: " + login);
+	    userService.deslogar(login);
+	    return ResponseEntity.ok("{\"message\": \"Usuário deslogado !\"}");
 	}
+
 	
 	
 	
