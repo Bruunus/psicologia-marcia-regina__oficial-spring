@@ -7,6 +7,7 @@ package br.com.psicologia.marcia.DTO.autenticacao;
  * @param nomeUsuario Login do usuário autenticado
  * @param role Perfil do usuário (ex: USER, ADMIN)
  */
-public record DadosTokenJWT(String token, String usuario, String role) { }
+public record DadosTokenJWT(String token, String login, String perfil) {}
+
 
 	 

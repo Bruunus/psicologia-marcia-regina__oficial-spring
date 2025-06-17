@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,12 +45,11 @@ public class ControllerLogin {
 	@PostMapping("/login")
 	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados) {
 
-	    // Verifique se o usuário existe antes de tentar autenticar
 	    boolean usuarioNaoExiste = userService.validacaoDeLogin(dados.getLogin());
 	    if (usuarioNaoExiste) {
 	        messageErro.setMessage("usuario_inexistente");
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-	        		.body(messageErro.getMessage());
+	                .body(messageErro.getMessage());
 	    }
 
 	    try {
@@ -57,32 +57,37 @@ public class ControllerLogin {
 	        var autenticacao = manager.authenticate(autenticacaoToken);
 
 	        if (autenticacao != null && autenticacao.isAuthenticated()) {
-	            boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
 
+	            boolean verificarAutenticacao = userService.verificarStatusAutenticacao(dados.getLogin());
 	            if (verificarAutenticacao) {
 	                messageErro.setMessage("usuario_ja_logado");
 	                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
-	            } else {
-	                var tokenJWT = tokenService.gerarToken((Usuario) autenticacao.getPrincipal());
-	                var nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
-	                var perfil = ((Usuario) autenticacao.getPrincipal()).getRole();
-	                return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario, perfil));
 	            }
-	        } else {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+	            // Pega os dados do usuário autenticado
+	            String login = ((UserDetails) autenticacao.getPrincipal()).getUsername();
+	            String tokenJWT = tokenService.gerarToken(login);
+	            String nomeUsuario = ((Usuario) autenticacao.getPrincipal()).getLogin();
+	            String perfil = ((Usuario) autenticacao.getPrincipal()).getRole();
+
+	            // Atualiza status_login para true
+	            userService.atualizarStatusLogin(nomeUsuario, true); // <-- este método você precisa ter
+
+	            return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, nomeUsuario, perfil));
 	        }
 
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
 	    } catch (BadCredentialsException e) {
-	        // Captura a exceção de credenciais inválidas (senha incorreta)
 	        messageErro.setMessage("senha_incorreta");
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
 
 	    } catch (Exception e) {
-	        // Captura qualquer outra exceção
-	        e.printStackTrace(); // Log da exceção
+	        e.printStackTrace();
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro interno do servidor");
 	    }
 	}
+
 	
 
 	

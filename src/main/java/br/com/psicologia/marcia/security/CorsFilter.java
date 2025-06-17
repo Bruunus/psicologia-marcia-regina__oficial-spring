@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.filter;
+package br.com.psicologia.marcia.security;
 
 import java.io.IOException;
 

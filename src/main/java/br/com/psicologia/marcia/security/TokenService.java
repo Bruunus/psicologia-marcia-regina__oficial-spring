@@ -1,18 +1,18 @@
 package br.com.psicologia.marcia.security;
 
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTCreationException;
-import com.auth0.jwt.exceptions.JWTVerificationException;
-
-import br.com.psicologia.marcia.model.Usuario;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
  
 /**
  * Serviço responsável por gerar e validar tokens JWT.
@@ -23,29 +23,32 @@ public class TokenService {
 
 	@Value(value = "${api.security.token.secret}")
 	private String secret;
-
-	/**
-     * Gera um token JWT assinado com os dados do usuário autenticado.
-     *
-     * @param usuario - O usuário autenticado
-     * @return String - Token JWT gerado
-     */	
-	public String gerarToken(Usuario usuario) {
-		try {
-		    Algorithm algoritimo = Algorithm.HMAC256(secret);
-		    return JWT.create()     
-		        .withIssuer("Teste de autenticação - Bruno Fernandes")		// identificação da aplicação
-		        .withSubject(usuario.getUsername())							//  usuário que recebe o token 
-		        .withClaim("prontuário", usuario.getId())					// identificação do usuario -  por exemplo "id" 
-		        .withExpiresAt(dataExpiracao())								// Declaração de validade do token
-		        .sign(algoritimo);											// assinatura do token que será o algoritmo
-		} catch (JWTCreationException exception){
-		    throw new RuntimeException("Erro ao gerar JWT" , exception);
-		}
-	 
-		
-	}
 	
+
+    @Value("${jwt.expiracao}")
+    private long expiracaoEmMillis;
+
+    /**
+     * Gera um token JWT contendo o login como subject e tempo de expiração.
+     *
+     * @param login o login do usuário autenticado
+     * @return o token JWT gerado
+     */
+    public String gerarToken(String login) {
+        Date agora = new Date();
+        Date expiracao = new Date(agora.getTime() + expiracaoEmMillis);
+
+        // Converte a chave secreta em bytes com codificação segura UTF-8
+        Key chaveAssinatura = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+
+
+        return Jwts.builder()
+                .setSubject(login)
+                .setIssuedAt(agora)
+                .setExpiration(expiracao)
+                .signWith(chaveAssinatura, SignatureAlgorithm.HS256)
+                .compact();
+    }
 	
 	/**
      * Calcula a data de expiração do token com base em 2 horas a partir do horário atual.
@@ -57,26 +60,38 @@ public class TokenService {
 				.plusMinutes(30)
 				.toInstant(ZoneOffset.of("-03:00"));
 	}
-	
+
 	
 	/**
-     * Extrai o login (subject) do token JWT.
+     * Extrai o subject (login) de um token JWT e valida sua assinatura e expiração.
      *
-     * @param token O token JWT
-     * @return String Login do usuário contido no token
+     * @param tokenJWT o token recebido no cabeçalho Authorization
+     * @return o login do usuário (subject)
+     * @throws RuntimeException se o token for inválido ou estiver expirado
      */
-    public String getSubject(String token) {
+    public String getSubject(String tokenJWT) {
         try {
-            Algorithm algoritmo = Algorithm.HMAC256(secret);
-            return JWT.require(algoritmo)
-                .withIssuer("Teste de autenticação - Bruno Fernandes")
-                .build()
-                .verify(token)
-                .getSubject();
-        } catch (JWTVerificationException exception) {
-            throw new RuntimeException("Token JWT inválido ou expirado!", exception);
+            Key chaveAssinatura = Keys.hmacShaKeyFor(secret.getBytes());
+
+            return Jwts
+                    .parserBuilder()
+                    .setSigningKey(chaveAssinatura)
+                    .build()
+                    .parseClaimsJws(tokenJWT)
+                    .getBody()
+                    .getSubject();
+
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            throw new RuntimeException("Token expirado!");
+        } catch (io.jsonwebtoken.JwtException e) {
+            throw new RuntimeException("Token inválido!");
         }
     }
+
+    
+    
+  
+    
 	
 	
 }

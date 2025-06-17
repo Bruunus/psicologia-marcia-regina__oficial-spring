@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
@@ -156,6 +157,25 @@ public class UsuarioService implements UserDetailsService {
 		
 	}
 	
+	
+	@Transactional
+	public void atualizarStatusLogin(String usuarioLogin, boolean status) {
+	    GerenciadorDeAcessoDeUsuario usuario = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioLogin);
+
+	    if (usuario != null) {
+	        gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(
+	            usuarioLogin,
+	            status,
+	            LocalDateTime.now()
+	        );
+	    } else {
+	        throw new IllegalArgumentException("Usuário não encontrado para atualizar status de login: " + usuarioLogin);
+	    }
+	}
+
+
+	
+	
 	/**
 	 * O objetivo principal dessa service é atualizar o status do login para false validando e 
 	 * certificando o logoff do usuário 
@@ -185,16 +205,24 @@ public class UsuarioService implements UserDetailsService {
 	 
 
 	/**
-	 * Metodo para deslogar um usuário da sessão 
-	 * @param usuarioRequest
+	 * Realiza o logoff do usuário, atualizando o status de login no banco e registrando o horário.
+	 *
+	 * @param usuarioRequest o nome (login) do usuário que será deslogado
 	 */
-	public void deslogar(String usuarioRequest) {		
-//		String user = usuario.login();		 
-		GerenciadorDeAcessoDeUsuario findByNome = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioRequest);
-		String usuario = findByNome.getNome();
-		gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(usuario, false, LocalDateTime.now());		
-//		System.out.println("Usário que vai se deslogar: "+usuario);
+	public void deslogar(String usuarioRequest) {
+	    GerenciadorDeAcessoDeUsuario usuario = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioRequest);
+
+	    if (usuario != null) {
+	        gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(
+	                usuario.getNome(),
+	                false,
+	                LocalDateTime.now()
+	        );
+	    } else {
+	        throw new IllegalArgumentException("Usuário não encontrado para logout: " + usuarioRequest);
+	    }
 	}
+
 	
 	AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(String login) {
         return new AccessUserManagerRecord(login);
