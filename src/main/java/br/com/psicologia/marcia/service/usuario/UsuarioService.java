@@ -17,6 +17,7 @@ import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.security.TokenStore;
 import br.com.psicologia.marcia.service.error.MessageError;
 
 @Configuration
@@ -187,7 +188,7 @@ public class UsuarioService implements UserDetailsService {
 		
 		String username = UsuarioService.usuario.getLogin();
 		System.out.println("Usuário a se deslogar: "+username);
-		deslogar(username);	
+//		deslogar(username);	
 		
 		GerenciadorDeAcessoDeUsuario findByNome = gerenciadorDeAcessoDeUsuarioRepository.findByNome(username);
 		Boolean statusLogin = findByNome.getStatusLogin();
@@ -205,23 +206,25 @@ public class UsuarioService implements UserDetailsService {
 	 
 
 	/**
-	 * Realiza o logoff do usuário, atualizando o status de login no banco e registrando o horário.
+	 * Realiza o logout do usuário removendo o token JWT da memória.
+	 * Se a remoção for bem-sucedida, exibe uma confirmação no console.
 	 *
-	 * @param usuarioRequest o nome (login) do usuário que será deslogado
+	 * @param usuario O objeto contendo as informações do usuário (incluindo login).
 	 */
-	public void deslogar(String usuarioRequest) {
-	    GerenciadorDeAcessoDeUsuario usuario = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioRequest);
+	public void deslogar(AccessUserManagerRecord usuario) {
+	    String login = usuario.login(); 
 
-	    if (usuario != null) {
-	        gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(
-	                usuario.getNome(),
-	                false,
-	                LocalDateTime.now()
-	        );
+	    // Remove o token da memória
+	    TokenStore.removerToken(login);
+
+	    // Verifica se o token foi de fato removido
+	    if (!TokenStore.usuarioJaLogado(login)) {
+	        System.out.println("Usuário deslogado com sucesso: " + login);
 	    } else {
-	        throw new IllegalArgumentException("Usuário não encontrado para logout: " + usuarioRequest);
+	        System.err.println("Falha ao remover o token do usuário: " + login);
 	    }
 	}
+
 
 	
 	AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(String login) {

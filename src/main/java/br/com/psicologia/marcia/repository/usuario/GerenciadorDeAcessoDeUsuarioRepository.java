@@ -96,7 +96,7 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 * @param status_login o status de login esperado ({@code true} ou {@code false})
 	 * @return {@code true} se o usuário com o status especificado existir; {@code false} caso contrário
 	 */
-	boolean existsByNomeAndStatusLogin(String nome, Boolean status_login);
+//	boolean existsByNomeAndStatusLogin(String nome);
 
 	
 

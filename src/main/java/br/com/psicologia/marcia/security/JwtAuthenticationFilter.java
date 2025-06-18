@@ -37,50 +37,59 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.gerenciadoDeAcesso = acessoRepo;
     }
 
+    /**
+     * Filtro responsável por interceptar todas as requisições HTTP para aplicar a autenticação baseada em JWT.
+     * 
+     * <p>Este filtro realiza as seguintes ações:</p>
+     * <ul>
+     *   <li>Ignora rotas públicas como <code>/auth/login</code> e <code>/auth/deslogar</code>, permitindo o acesso sem autenticação.</li>
+     *   <li>Extrai o token JWT do cabeçalho <code>Authorization</code>.</li>
+     *   <li>Valida se o token extraído está registrado no <code>TokenStore</code>.</li>
+     *   <li>Se válido, recupera o login do usuário a partir do token e autentica o usuário no contexto do Spring Security.</li>
+     *   <li>Se inválido, retorna um erro HTTP 401 (Unauthorized).</li>
+     * </ul>
+     * 
+     * @param request  a requisição HTTP recebida
+     * @param response a resposta HTTP que será enviada
+     * @param filterChain a cadeia de filtros que será continuada caso a autenticação esteja correta
+     * 
+     * @throws ServletException se ocorrer um erro no processamento da requisição
+     * @throws IOException se ocorrer um erro de I/O durante o filtro
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Extrai o token do cabeçalho Authorization
         String token = recuperarToken(request);
+        String uri = request.getRequestURI();
+
+        // 🔐 PERMITIR ROTAS PÚBLICAS ANTES DE QUALQUER VALIDAÇÃO DE TOKEN
+        if (uri.endsWith("/auth/login") || uri.endsWith("/auth/deslogar")) {
+            System.out.println("[INTERCEPTOR] Ignorando requisição pública: " + uri);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (token != null && !token.isBlank()) {
             try {
-                // Extrai o login (username) do token
                 String login = tokenService.getSubject(token);
 
-                // Verifica se o usuário está logado no banco
-                boolean usuarioLogado = gerenciadoDeAcesso.existsByNomeAndStatusLogin(login, true);
-
-                if (usuarioLogado) {
-
-                    // Se a requisição for para /deslogar, realiza o logoff imediatamente
-                    if (request.getRequestURI().endsWith("/deslogar")) {
-                        try {
-                            usuarioService.deslogar(login);
-                            System.out.println("Status_login alterado para FALSE via filtro em /deslogar");	// temp
-                        } catch (Exception ex) {
-                            System.err.println("Erro ao tentar deslogar usuário no filtro: " + ex.getMessage());
-                            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                            response.getWriter().write("Erro ao deslogar usuário.");	//temp
-                            return;
-                        }
-                    }
-
-                    // Autentica o usuário normalmente
-                    UserDetails userDetails = usuarioService.loadUserByUsername(login);
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-
-                    System.out.println("Usuário autenticado via filtro: " + login);
-
-                } else {
-                    throw new RuntimeException("Usuário está deslogado no banco. Acesso negado.");
+                if (!TokenStore.tokenValido(login, token)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("Token inválido ou sessão expirada.");
+                    return;
                 }
+
+                UserDetails userDetails = usuarioService.loadUserByUsername(login);
+
+                UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+                System.out.println("Usuário autenticado via JWT: " + login);
 
             } catch (Exception e) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -89,9 +98,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // Continua a cadeia de filtros normalmente
         filterChain.doFilter(request, response);
     }
+
+
+
+
 
 
 

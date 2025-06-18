@@ -35,6 +35,7 @@ public class TokenService {
      * @return o token JWT gerado
      */
     public String gerarToken(String login) {
+    	
         Date agora = new Date();
         Date expiracao = new Date(agora.getTime() + expiracaoEmMillis);
 

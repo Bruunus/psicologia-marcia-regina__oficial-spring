@@ -56,11 +56,8 @@ public class SecurityConfigurations {
 				.cors(cors -> cors.disable())
 				.authorizeHttpRequests(auth -> auth
 		                .requestMatchers(
-		                		"/auth/login", 
-		                		"/auth/register", 
-		                		"/auth/deslogar", 
-		                		"/auth/status-login", 
-		                		"/auth/status-update"
+		                		"/auth/login",
+		                		"/auth/deslogar"
 		                		).permitAll()
 		                .anyRequest().authenticated()
 				
