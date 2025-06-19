@@ -37,7 +37,7 @@ public class TokenService {
     public String gerarToken(String login) {
     	
         Date agora = new Date();
-        Date expiracao = new Date(agora.getTime() + expiracaoEmMillis);
+//        Date expiracao = new Date(agora.getTime() + expiracaoEmMillis);
 
         // Converte a chave secreta em bytes com codificação segura UTF-8
         Key chaveAssinatura = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -46,7 +46,7 @@ public class TokenService {
         return Jwts.builder()
                 .setSubject(login)
                 .setIssuedAt(agora)
-                .setExpiration(expiracao)
+                .setExpiration(Date.from(dataExpiracao()))
                 .signWith(chaveAssinatura, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -58,7 +58,7 @@ public class TokenService {
      */
 	private Instant dataExpiracao() {
 		return LocalDateTime.now()
-				.plusMinutes(30)
+				.plusHours(2)
 				.toInstant(ZoneOffset.of("-03:00"));
 	}
 

@@ -55,7 +55,8 @@ public class ControllerLogin {
 	        var login = ((UserDetails) autenticacao.getPrincipal()).getUsername();
 	        
 	        if (TokenStore.usuarioJaLogado(login)) {
-			    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("O usuário já está logado.");
+	        	messageErro.setMessage("usuario_ja_logado");
+			    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
 			} else {
 				var token = tokenService.gerarToken(login);
 		        TokenStore.adicionarToken(login, token);
@@ -84,14 +85,16 @@ public class ControllerLogin {
 	 */
 	@PostMapping("/deslogar")
 	public ResponseEntity<?> logout(HttpServletRequest request) {
-	    String token = tokenService.recuperarToken(request);
+	    String authHeader = request.getHeader("Authorization");
 
-	    if (token == null || token.isBlank()) {
+	    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não fornecido.");
 	    }
 
+	    String token = authHeader.replace("Bearer ", "");
+
 	    try {
-	        String login = tokenService.getSubject(token);
+	        String login = tokenService.getSubject(token); // método que extrai o login do token
 
 	        if (!TokenStore.tokenValido(login, token)) {
 	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou expirado.");
@@ -106,7 +109,7 @@ public class ControllerLogin {
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro ao processar logout: " + e.getMessage());
 	    }
 	}
-	
+
 
 
 	

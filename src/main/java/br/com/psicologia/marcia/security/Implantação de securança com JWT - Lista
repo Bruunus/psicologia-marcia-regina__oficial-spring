@@ -1,0 +1,20 @@
+Algumas opções possíveis que você pode estar pensando:
+
+	* 	Não pode o mesmo usuario fazer login sendo que um token já foi gerado, 
+		então a requisição deve ser rejeitada e emitir uma mensagem para o frontend
+		"Este usuário já está logado"	- FEITO
+		
+		
+	
+
+❓ Bloquear acesso com token expirado automaticamente.
+
+🕐 Associar horário de login/logout por token (registro de auditoria).
+
+👥 Implementar diferentes permissões por ROLE (ADMIN, USER...).
+
+🔁 Renovar token JWT automa ticamente (refresh token).
+
+📦 Aplicar isso ao Angular agora (testar via frontend).
+
+🧪 Criar testes automatizados para autenticação.
