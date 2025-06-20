@@ -19,6 +19,7 @@ import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.security.TokenService;
 import br.com.psicologia.marcia.security.TokenStore;
 import br.com.psicologia.marcia.service.error.MessageError;
+import br.com.psicologia.marcia.service.usuario.AuditoriaDeSessaoDeUsuarioService;
 import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -41,7 +42,10 @@ public class ControllerLogin {
 	private MessageError messageErro;
 	
 	@Autowired
-	private TokenStore tokenStore;
+	private AuditoriaDeSessaoDeUsuarioService auditoriaService;
+	
+	@Autowired
+	private UsuarioService usuarioService;
 	
 	
 	
@@ -56,11 +60,12 @@ public class ControllerLogin {
 	        
 	        if (TokenStore.usuarioJaLogado(login)) {
 	        	messageErro.setMessage("usuario_ja_logado");
-			    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
+			    return ResponseEntity.status(HttpStatus.CONFLICT).body(messageErro.getMessage());
 			} else {
 				var token = tokenService.gerarToken(login);
 		        TokenStore.adicionarToken(login, token);
 		        var perfil = ((Usuario) autenticacao.getPrincipal()).getRole();
+		        auditoriaService.registrarLogin(login);
 		        return ResponseEntity.ok(new DadosTokenJWT(token, login, perfil));
 			}	        
 
@@ -84,7 +89,7 @@ public class ControllerLogin {
 	 * @return Mensagem de sucesso ou erro.
 	 */
 	@PostMapping("/deslogar")
-	public ResponseEntity<?> logout(HttpServletRequest request) {
+	public ResponseEntity<String> logout(HttpServletRequest request) {
 	    String authHeader = request.getHeader("Authorization");
 
 	    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -92,23 +97,18 @@ public class ControllerLogin {
 	    }
 
 	    String token = authHeader.replace("Bearer ", "");
+	    String resultado = usuarioService.logout(token);
 
-	    try {
-	        String login = tokenService.getSubject(token); // método que extrai o login do token
-
-	        if (!TokenStore.tokenValido(login, token)) {
-	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou expirado.");
-	        }
-
-	        TokenStore.removerToken(login);
-	        System.out.println("Token removido da memória para o usuário: " + login);
-
-	        return ResponseEntity.ok("Logout efetuado com sucesso.");
-
-	    } catch (Exception e) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro ao processar logout: " + e.getMessage());
+	    // Decide o status HTTP com base na mensagem retornada
+	    if (resultado.contains("sucesso")) {
+	        return ResponseEntity.ok(resultado);
+	    } else if (resultado.contains("inválido") || resultado.contains("expirado")) {
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(resultado);
+	    } else {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultado);
 	    }
 	}
+
 
 
 
@@ -157,7 +157,7 @@ public class ControllerLogin {
 		boolean registrarUsuario = userService.registrarUsuario(user);
 		
 		if(registrarUsuario) {
-			return ResponseEntity.badRequest().body("Username already exists");
+			return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
 		} else {
 			return ResponseEntity.ok("Usuário registrado com sucesso !!!");
 		}

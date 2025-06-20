@@ -1,20 +1,64 @@
 Algumas opções possíveis que você pode estar pensando:
 
-	* 	Não pode o mesmo usuario fazer login sendo que um token já foi gerado, 
-		então a requisição deve ser rejeitada e emitir uma mensagem para o frontend
-		"Este usuário já está logado"	- FEITO
-		
+[FEITO]		* 	Não pode o mesmo usuario fazer login sendo que um token já foi gerado, 
+				então a requisição deve ser rejeitada e emitir uma mensagem para o frontend
+				"Este usuário já está logado"	- FEITO
 		
 	
+COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/2025)
 
-❓ Bloquear acesso com token expirado automaticamente.
+	*	Precisamos finalizar o tratamento de resposta do servidor no login no frontend. As mensagens precisam ser apresentadas
+	em caso de erro, as que faltam são:
+		
+		*	usuario_inexistente: O controler precisa antes de atribuir um token, verificar se este usuário existe no banco. Do 
+		contrário ele precisa retornar que o usuario não existe, e o frontend já estará esperando e saberá como tratar, esta 
+		mensagem estará sendo tratada no 401:
+		
+			case 'usuario_inexistente':
+            this.gerenciadoDeAutenticacaoService.setErrorMessage('Usuário inexistente');
+            break;
+            
+            
+        *	Erro desconhecido ou silencioso: Qualquer outro erro que possa dar além destes tratados que seja 401, 
+        o frontend precisa saber. 
+        
+        * Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT
+        
+        
 
-🕐 Associar horário de login/logout por token (registro de auditoria).
+PRÓXIMAS IMPLANTAÇÕES
 
-👥 Implementar diferentes permissões por ROLE (ADMIN, USER...).
 
-🔁 Renovar token JWT automa ticamente (refresh token).
 
-📦 Aplicar isso ao Angular agora (testar via frontend).
+Criar outro tipo de auditoria, uma entidade de auditoria de erros de mensagens de todas as requisições e armazenar no banco para analise e coleta de dados.
+        
+ 
+		
+		
+[FEITO ]		❓ Bloquear acesso com token expirado automaticamente.
 
-🧪 Criar testes automatizados para autenticação.
+[IMPLANTANDO] 	🕐 Associar horário de login/logout por token (registro de auditoria).		
+	
+				Falta: 
+					*	Coletar o IP da máquina
+					*	"O que significa a coluna user_agent da entidade AuditoriaDeSessaoDeUsuarioService? Qual a função dela exatamente, pois fiz um teste de logout e não foi preenchida"
+
+				👥 Implementar diferentes permissões por ROLE (ADMIN, USER...).
+
+				🔁 Renovar token JWT automa ticamente (refresh token).
+
+				📦 Aplicar isso ao Angular agora (testar via frontend).
+
+				🧪 Criar testes automatizados para autenticação.
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		

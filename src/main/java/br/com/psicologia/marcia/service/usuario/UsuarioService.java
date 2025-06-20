@@ -17,6 +17,7 @@ import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.security.TokenService;
 import br.com.psicologia.marcia.security.TokenStore;
 import br.com.psicologia.marcia.service.error.MessageError;
 
@@ -28,16 +29,19 @@ public class UsuarioService implements UserDetailsService {
 	private UsuarioRepository userRepository;
 	
 	@Autowired
-    private PasswordEncoder passwordEncoder;
+    private AuditoriaDeSessaoDeUsuarioService auditoriaService;
 	
 	@Autowired
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+	private PasswordEncoder passwordEncoder;
+
+	
+	
 	
 	@Autowired
 	private GerenciadorDeAcessoDeUsuarioRepository gerenciadorDeAcessoDeUsuarioRepository;
 	
 	@Autowired
-	private UsuarioRepository usuarioRepositoty;
+	private TokenService tokenService;
 	
 	@Autowired
 	private MessageError messageError;
@@ -60,7 +64,7 @@ public class UsuarioService implements UserDetailsService {
             return true;
         } else {
         	
-        	user.setSenha(bCryptPasswordEncoder.encode(user.getPassword()));
+        	user.setSenha(passwordEncoder.encode(user.getPassword()));
         	userRepository.save(user);
         	
         	GerenciadorDeAcessoDeUsuario usuarioGerenciavel = new GerenciadorDeAcessoDeUsuario();
@@ -101,29 +105,7 @@ public class UsuarioService implements UserDetailsService {
 	
 	
 	
-	public boolean verificarStatusAutenticacao(String usuarioLogin) {
-		// procura o usuario no banco de dados com base na coluna status_login
-		Boolean verificarUsuarioLogado = gerenciadorDeAcessoDeUsuarioRepository.statusLoginUsuario(usuarioLogin);
-		System.out.println("Retorno da query: "+ verificarUsuarioLogado);
-		
-		if(verificarUsuarioLogado) {
-			messageError.setMessage("usuario_ja_logado");
-			return true;
-			
-			
-			
-		} else {
-			// verifica se é false = 0 ---->>> se for então então pode atualizar pra 1 e retorna true 
-			System.out.println("Esse usuário está logado agora !");			
-			gerenciadorDeAcessoDeUsuarioRepository.updateAcessoDeUsuario(
-					usuarioLogin,
-					true,
-					LocalDateTime.now());
-			
-			return false;
-		}
-		
-	}
+	
 	
 	/**
 	 * Verifica se este login fornecido é existente na tabela de usuários
@@ -206,24 +188,36 @@ public class UsuarioService implements UserDetailsService {
 	 
 
 	/**
-	 * Realiza o logout do usuário removendo o token JWT da memória.
-	 * Se a remoção for bem-sucedida, exibe uma confirmação no console.
+	 * Processa o logout do usuário a partir do token JWT fornecido.
 	 *
-	 * @param usuario O objeto contendo as informações do usuário (incluindo login).
+	 * @param tokenJWT Token JWT extraído do cabeçalho Authorization.
+	 * @return Mensagem de status indicando o resultado da operação.
 	 */
-	public void deslogar(AccessUserManagerRecord usuario) {
-	    String login = usuario.login(); 
+	public String logout(String tokenJWT) {
+	    try {
+	        // Extrai o login do token
+	        String login = tokenService.getSubject(tokenJWT);
 
-	    // Remove o token da memória
-	    TokenStore.removerToken(login);
+	        // Verifica se o token é válido para o login fornecido
+	        if (!TokenStore.tokenValido(login, tokenJWT)) {
+	            return "Token inválido ou expirado.";
+	        }
 
-	    // Verifica se o token foi de fato removido
-	    if (!TokenStore.usuarioJaLogado(login)) {
-	        System.out.println("Usuário deslogado com sucesso: " + login);
-	    } else {
-	        System.err.println("Falha ao remover o token do usuário: " + login);
+	        // Remove o token da memória
+	        TokenStore.removerToken(login);
+	        System.out.println("Token removido da memória para o usuário: " + login);
+
+	        // Registra na auditoria
+	        auditoriaService.registrarLogout(login, "LOGOUT_MANUAL");
+
+	        return "Logout efetuado com sucesso.";
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return "Erro ao processar logout: " + e.getMessage();
 	    }
 	}
+
 
 
 	
