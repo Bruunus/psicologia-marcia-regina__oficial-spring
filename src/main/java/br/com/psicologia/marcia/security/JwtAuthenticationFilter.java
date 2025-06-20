@@ -66,21 +66,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = recuperarToken(request);
         String uri = request.getRequestURI();
 
-        // 🔓 Permite livre acesso às rotas públicas
+        // Permite livre acesso às rotas públicas
         if (uri.endsWith("/auth/login") || uri.endsWith("/auth/deslogar")) {
             System.out.println("[INTERCEPTOR] Ignorando requisição pública: " + uri);
             filterChain.doFilter(request, response);
             return;
         }
 
-        // ❌ Token ausente → Bloqueia com erro 401
+        //  Token ausente → Bloqueia com erro 401
         if (token == null || token.isBlank()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token ausente. É necessário estar autenticado.");
             return;
         }
 
-        // ✅ Token presente → validação
+        // Token presente → validação
         try {
             String login = tokenService.getSubject(token);
 
@@ -107,7 +107,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 🔁 Continua com a cadeia de filtros
+        // Continua com a cadeia de filtros
         filterChain.doFilter(request, response);
     }
 

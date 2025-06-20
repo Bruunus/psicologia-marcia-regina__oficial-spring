@@ -1,21 +1,16 @@
 package br.com.psicologia.marcia.service.usuario;
 
-import java.time.LocalDateTime;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
 import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 import br.com.psicologia.marcia.model.Usuario;
-import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
 import br.com.psicologia.marcia.security.TokenService;
 import br.com.psicologia.marcia.security.TokenStore;
@@ -33,12 +28,6 @@ public class UsuarioService implements UserDetailsService {
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-
-	
-	
-	
-	@Autowired
-	private GerenciadorDeAcessoDeUsuarioRepository gerenciadorDeAcessoDeUsuarioRepository;
 	
 	@Autowired
 	private TokenService tokenService;
@@ -71,7 +60,6 @@ public class UsuarioService implements UserDetailsService {
         	usuarioGerenciavel.setNome(user.getLogin());
         	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
 //        	usuarioGerenciavel.setTime_stamp(LocalDateTime.now());
-        	gerenciadorDeAcessoDeUsuarioRepository.save(usuarioGerenciavel);
         	
         	return false;
         }
@@ -114,7 +102,7 @@ public class UsuarioService implements UserDetailsService {
 	 */
 	public boolean validacaoDeLogin(String loginHttp) {
 		System.out.println("Valor da pesquisa: "+loginHttp);
-		String usuario = gerenciadorDeAcessoDeUsuarioRepository.procurarPorNome(loginHttp);
+		String usuario = userRepository.procurarPorNome(loginHttp);
 		if(usuario == null || usuario.equals("")) {
 			return true;
 		} else {
@@ -124,66 +112,6 @@ public class UsuarioService implements UserDetailsService {
 	}
 	
 	
-	/**
-	 * O objetivo principal dessa service é apenas verificar o status do login na base de dados
-	 * @param login
-	 * @return
-	 */
-	public boolean statusLogin(AccessUserManagerRecord loginHttp) {
-		String login = loginHttp.login();
-		Boolean statusLogin = gerenciadorDeAcessoDeUsuarioRepository.statusLoginUsuario(login);
-		if(statusLogin) {
-			return true;
-		} else {
-			return false;
-		}
-		
-	}
-	
-	
-	@Transactional
-	public void atualizarStatusLogin(String usuarioLogin, boolean status) {
-	    GerenciadorDeAcessoDeUsuario usuario = gerenciadorDeAcessoDeUsuarioRepository.findByNome(usuarioLogin);
-
-	    if (usuario != null) {
-	        gerenciadorDeAcessoDeUsuarioRepository.updateLogoffDeUsuario(
-	            usuarioLogin,
-	            status,
-	            LocalDateTime.now()
-	        );
-	    } else {
-	        throw new IllegalArgumentException("Usuário não encontrado para atualizar status de login: " + usuarioLogin);
-	    }
-	}
-
-
-	
-	
-	/**
-	 * O objetivo principal dessa service é atualizar o status do login para false validando e 
-	 * certificando o logoff do usuário 
-	 * 
-	 * @param login
-	 * @return
-	 */
-	public boolean statusUpdateService() {		
-		
-		String username = UsuarioService.usuario.getLogin();
-		System.out.println("Usuário a se deslogar: "+username);
-//		deslogar(username);	
-		
-		GerenciadorDeAcessoDeUsuario findByNome = gerenciadorDeAcessoDeUsuarioRepository.findByNome(username);
-		Boolean statusLogin = findByNome.getStatusLogin();
-		
-		System.out.println("Status desse usuário após deslogar: "+statusLogin);
-		if(statusLogin) {
-			System.out.println("Usuário deslogado");
-			return true;
-		} else {
-			throw new RuntimeException("Erro ao atualizar status e deslogar usuário");
-		}		
-		
-	}
 	
 	 
 

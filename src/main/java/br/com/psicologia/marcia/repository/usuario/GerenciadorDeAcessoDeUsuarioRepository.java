@@ -22,8 +22,8 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 * @param usuarioLogin o nome de login do usuário
 	 * @return {@code true} se o usuário estiver com status de login ativo, {@code false} caso contrário
 	 */
-	@Query(value = "SELECT status_login FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
-	Boolean statusLoginUsuario(@Param("usuarioLogin") String usuarioLogin);
+//	@Query(value = "SELECT status_login FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
+//	Boolean statusLoginUsuario(@Param("usuarioLogin") String usuarioLogin);
 
 	
 	
@@ -33,19 +33,11 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 * @param usuarioLogin o nome de login do usuário
 	 * @return o objeto {@link GerenciadorDeAcessoDeUsuario} correspondente ao nome informado
 	 */
-	GerenciadorDeAcessoDeUsuario findByNome(String usuarioLogin);
+//	GerenciadorDeAcessoDeUsuario findByNome(String usuarioLogin);
 	
 	
 	
-	/**
-	 * Procura o nome de um usuário no banco de dados.
-	 * Usado para verificar a existência de um login específico.
-	 *
-	 * @param usuarioLogin o nome de login do usuário
-	 * @return o nome do usuário, se encontrado; {@code null} caso contrário
-	 */
-	@Query(value = "SELECT nome FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
-	String procurarPorNome(@Param("usuarioLogin") String usuarioLogin);
+	
 	
 	 
 
@@ -57,15 +49,15 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 * @param status_login o novo status de login (normalmente {@code true})
 	 * @param ultimo_login o horário em que o login foi realizado
 	 */
-	@Transactional
-    @Modifying
-    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_login = :ultimo_login "
-    		+ "WHERE nome = :nome ", nativeQuery = true)
-	void updateAcessoDeUsuario(
-			@Param("nome") String nome, 
-			@Param("status_login") Boolean status_login, 
-			@Param("ultimo_login") LocalDateTime ultimo_login
-			);
+//	@Transactional
+//    @Modifying
+//    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_login = :ultimo_login "
+//    		+ "WHERE nome = :nome ", nativeQuery = true)
+//	void updateAcessoDeUsuario(
+//			@Param("nome") String nome, 
+//			@Param("status_login") Boolean status_login, 
+//			@Param("ultimo_login") LocalDateTime ultimo_login
+//			);
 
 	
 	
@@ -77,15 +69,15 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 * @param status_login o novo status de login (normalmente {@code false})
 	 * @param ultimo_logout o horário em que o logout foi realizado
 	 */
-	@Transactional
-    @Modifying
-    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_logout = :ultimo_logout "
-    		+ "WHERE nome = :nome ", nativeQuery = true)
-	void updateLogoffDeUsuario(
-			@Param("nome") String nome, 
-			@Param("status_login") Boolean status_login, 
-			@Param("ultimo_logout") LocalDateTime ultimo_logout
-			);
+//	@Transactional
+//    @Modifying
+//    @Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = :status_login,  ultimo_logout = :ultimo_logout "
+//    		+ "WHERE nome = :nome ", nativeQuery = true)
+//	void updateLogoffDeUsuario(
+//			@Param("nome") String nome, 
+//			@Param("status_login") Boolean status_login, 
+//			@Param("ultimo_logout") LocalDateTime ultimo_logout
+//			);
 	 
 	
 	/**
@@ -108,9 +100,9 @@ public interface GerenciadorDeAcessoDeUsuarioRepository extends JpaRepository<Ge
 	 *
 	 * @param nome o nome (login) do usuário que será deslogado
 	 */
-	@Modifying
-	@Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = false WHERE nome = :nome", nativeQuery = true)
-	void updateStatusLoginByNome(@Param("nome") String nome);
+//	@Modifying
+//	@Query(value = "UPDATE gerenciador_de_acesso_de_usuario SET status_login = false WHERE nome = :nome", nativeQuery = true)
+//	void updateStatusLoginByNome(@Param("nome") String nome);
 
 
 

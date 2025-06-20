@@ -4,13 +4,14 @@ Algumas opções possíveis que você pode estar pensando:
 				então a requisição deve ser rejeitada e emitir uma mensagem para o frontend
 				"Este usuário já está logado"	- FEITO
 		
+		
 	
 COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/2025)
 
 	*	Precisamos finalizar o tratamento de resposta do servidor no login no frontend. As mensagens precisam ser apresentadas
 	em caso de erro, as que faltam são:
 		
-		*	usuario_inexistente: O controler precisa antes de atribuir um token, verificar se este usuário existe no banco. Do 
+[FEITO]		*	usuario_inexistente: O controler precisa antes de atribuir um token, verificar se este usuário existe no banco. Do 
 		contrário ele precisa retornar que o usuario não existe, e o frontend já estará esperando e saberá como tratar, esta 
 		mensagem estará sendo tratada no 401:
 		
@@ -19,10 +20,16 @@ COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/
             break;
             
             
-        *	Erro desconhecido ou silencioso: Qualquer outro erro que possa dar além destes tratados que seja 401, 
+[FEITO]	   	*	Erro desconhecido ou silencioso: Qualquer outro erro que possa dar além destes tratados que seja 401, 
         o frontend precisa saber. 
         
-        * Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT
+        * Faça um debug no processo de login e logout, os dois estão apresentando erros no console e temos que verificar.
+        
+        * Retirar 100@ a a entidade e repositorio responsavel pelo status_login GerenciadorDeAcessoDeUsuarioRepository e a entidade GerenciadorDeAcessoDeUsuario
+        Vai com calma porque estas classes estão interligadas com o sistema de segurança
+        
+        * Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT E criar uma tabela chamada analitcs para inicialmente
+        receber todos os erros e mensagens do servidor e para cada api adicione o que o usuário está fazendo naquele endpoint 
         
         
 
@@ -37,7 +44,7 @@ Criar outro tipo de auditoria, uma entidade de auditoria de erros de mensagens d
 		
 [FEITO ]		❓ Bloquear acesso com token expirado automaticamente.
 
-[IMPLANTANDO] 	🕐 Associar horário de login/logout por token (registro de auditoria).		
+[FEITO] 	🕐 Associar horário de login/logout por token (registro de auditoria).		
 	
 				Falta: 
 					*	Coletar o IP da máquina

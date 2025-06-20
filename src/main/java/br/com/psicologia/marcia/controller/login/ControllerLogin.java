@@ -1,5 +1,8 @@
 package br.com.psicologia.marcia.controller.login;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,9 +53,16 @@ public class ControllerLogin {
 	
 	
 	@PostMapping("/login")
-	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados) {
+	public ResponseEntity<?> login(@Valid @RequestBody Usuario dados, HttpServletRequest request) {		
 		
 	    try {
+	    	
+	    	if (usuarioService.validacaoDeLogin(dados.getLogin())) {
+	            messageErro.setMessage("usuario_inexistente");
+	            System.err.println("Usuário inexistente: " + dados.getLogin());	            
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageErro.getMessage());
+	        }
+	    	
 	        var autenticacaoToken = new UsernamePasswordAuthenticationToken(dados.getLogin(), dados.getSenha());
 	        var autenticacao = manager.authenticate(autenticacaoToken);
 	        
@@ -60,22 +70,25 @@ public class ControllerLogin {
 	        
 	        if (TokenStore.usuarioJaLogado(login)) {
 	        	messageErro.setMessage("usuario_ja_logado");
+	        	System.err.println("Este usuário já está logado");
 			    return ResponseEntity.status(HttpStatus.CONFLICT).body(messageErro.getMessage());
 			} else {
 				var token = tokenService.gerarToken(login);
 		        TokenStore.adicionarToken(login, token);
 		        var perfil = ((Usuario) autenticacao.getPrincipal()).getRole();
-		        auditoriaService.registrarLogin(login);
+		        auditoriaService.registrarLogin(login, request);
 		        return ResponseEntity.ok(new DadosTokenJWT(token, login, perfil));
 			}	        
 
 	    } catch (BadCredentialsException e) {
 	        messageErro.setMessage("senha_incorreta");
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Senha incorreta !\"}");
+	        System.err.println(messageErro.getMessage());
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("senha_incorreta");
 
 	    } catch (Exception e) {
 	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"Erro de autenticação!\"}");
+	        System.err.println("Erro inesperado de autenticação");
+	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Erro de autenticação!");
 	    }
 	}
 
@@ -108,44 +121,6 @@ public class ControllerLogin {
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultado);
 	    }
 	}
-
-
-
-
-	
-	
-	
-	
-	
-	@PostMapping("/status-login")
-	public ResponseEntity<?> statusDeAutenticacaoDeUsuario(@RequestBody AccessUserManagerRecord usuario) {
-		// verificar no banco esse nome e busco pelo status do login e retorne bolean
-		System.out.println("Entrado em 'status logins => Valor do request: "+usuario);
-		boolean statusLogin = userService.statusLogin(usuario);
-		if(statusLogin) {
-			System.err.println("O usuário já está logado");
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-					.body("Já existe um usuário logado nesta conta, acesso negado.");
-		} else {
-			System.out.println("Usuário não está logado");
-			return ResponseEntity.status(HttpStatus.OK).build();
-		}
-		 
-	}
-	
-	@GetMapping("/status-update")
-	public ResponseEntity<?> verificacaoDeStatusPollingDeUsuario() {
-	 
-		boolean statusLogin = userService.statusUpdateService();
-		if(statusLogin) {			 
-			return ResponseEntity.ok(statusLogin);
-		} else {
-			return (ResponseEntity<?>) ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-			 
-	}
-	
-	 
 	
 	
 	
@@ -164,16 +139,7 @@ public class ControllerLogin {
 		
     }
 	
-	
-//	@PostMapping("teste")
-//    public ResponseEntity<?> testUser(@RequestBody Usuario user) {
-//		String login = user.getLogin();
-//		boolean validarExistenciaDeUsuario = userService.validacaoDeLogin(login);
-//		System.out.println(validarExistenciaDeUsuario);
-//    	
-//		return ResponseEntity.ok("Teste");
-//	}
-	
+	 
 	
 	 
 }
