@@ -34,8 +34,8 @@ public class CreateControllerPaciente {
 			if (cadastro == 200) { 
 				return ResponseEntity.status(HttpStatus.OK)
 						.body(Collections.singletonMap("message", "Cadastro realizado com sucesso"));
-			} else if(cadastro == 400) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+			} else if(cadastro == 409) {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
 						.body(Collections.singletonMap("message", "CPF já cadastrado no sistema"));
 			} else {
 				throw new RuntimeException();			}

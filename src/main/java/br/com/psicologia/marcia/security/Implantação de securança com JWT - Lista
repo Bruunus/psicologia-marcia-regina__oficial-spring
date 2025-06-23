@@ -23,13 +23,21 @@ COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/
 [FEITO]	   	*	Erro desconhecido ou silencioso: Qualquer outro erro que possa dar além destes tratados que seja 401, 
         o frontend precisa saber. 
         
-        * Faça um debug no processo de login e logout, os dois estão apresentando erros no console e temos que verificar.
+[FEITO] * Faça um debug no processo de login e logout, os dois estão apresentando erros no console e temos que verificar.
         
-        * Retirar 100@ a a entidade e repositorio responsavel pelo status_login GerenciadorDeAcessoDeUsuarioRepository e a entidade GerenciadorDeAcessoDeUsuario
+[FEITO] * Retirar 100@ a a entidade e repositorio responsavel pelo status_login GerenciadorDeAcessoDeUsuarioRepository e a entidade GerenciadorDeAcessoDeUsuario
         Vai com calma porque estas classes estão interligadas com o sistema de segurança
         
         * Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT E criar uma tabela chamada analitcs para inicialmente
         receber todos os erros e mensagens do servidor e para cada api adicione o que o usuário está fazendo naquele endpoint 
+        
+        
+        A propósta: (sem código por enquanto, apenas conversa)EU quero criar uma espécie de analitcs no meu app, quero criar uma entidade que traga 
+        informações de tudo o que está ocorrendo no sistema, o que voce acha ? E quero começar mapeando todas as requisições do front a 
+        partir do filtro e também registrar o request do backend, tipo, o que o frontend soliciou, quantas vezes foi feito e qual foi 
+        a resposta do servidor
+        
+        
         
         
 
@@ -38,23 +46,13 @@ PRÓXIMAS IMPLANTAÇÕES
 
 
 Criar outro tipo de auditoria, uma entidade de auditoria de erros de mensagens de todas as requisições e armazenar no banco para analise e coleta de dados.
-        
- 
-		
-		
-[FEITO ]		❓ Bloquear acesso com token expirado automaticamente.
 
-[FEITO] 	🕐 Associar horário de login/logout por token (registro de auditoria).		
-	
-				Falta: 
-					*	Coletar o IP da máquina
-					*	"O que significa a coluna user_agent da entidade AuditoriaDeSessaoDeUsuarioService? Qual a função dela exatamente, pois fiz um teste de logout e não foi preenchida"
 
 				👥 Implementar diferentes permissões por ROLE (ADMIN, USER...).
+				
+					Criar uma checagem dentro do doInternalFilter para ele verificar o tipo de role, se caso, for administrador, então precisa
+					carregar dados que não é mostrado na ROLE de usuario normal.
 
-				🔁 Renovar token JWT automa ticamente (refresh token).
-
-				📦 Aplicar isso ao Angular agora (testar via frontend).
 
 				🧪 Criar testes automatizados para autenticação.
 		

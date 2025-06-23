@@ -9,7 +9,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
-import br.com.psicologia.marcia.model.GerenciadorDeAcessoDeUsuario;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
 import br.com.psicologia.marcia.security.TokenService;
@@ -56,9 +55,9 @@ public class UsuarioService implements UserDetailsService {
         	user.setSenha(passwordEncoder.encode(user.getPassword()));
         	userRepository.save(user);
         	
-        	GerenciadorDeAcessoDeUsuario usuarioGerenciavel = new GerenciadorDeAcessoDeUsuario();
-        	usuarioGerenciavel.setNome(user.getLogin());
-        	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
+//        	GerenciadorDeAcessoDeUsuario usuarioGerenciavel = new GerenciadorDeAcessoDeUsuario();
+//        	usuarioGerenciavel.setNome(user.getLogin());
+//        	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
 //        	usuarioGerenciavel.setTime_stamp(LocalDateTime.now());
         	
         	return false;

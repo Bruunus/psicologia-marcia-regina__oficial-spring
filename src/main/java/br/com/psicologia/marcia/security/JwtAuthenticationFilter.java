@@ -1,19 +1,18 @@
 package br.com.psicologia.marcia.security;
 
-import br.com.psicologia.marcia.repository.usuario.GerenciadorDeAcessoDeUsuarioRepository;
-import br.com.psicologia.marcia.service.usuario.UsuarioService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.time.LocalTime;
+import br.com.psicologia.marcia.service.usuario.UsuarioService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Filtro JWT que intercepta todas as requisições HTTP para validar o token JWT,
@@ -23,18 +22,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioService usuarioService;
-    private final GerenciadorDeAcessoDeUsuarioRepository gerenciadoDeAcesso;
 
 
     /**
      * Construtor para injeção de dependências.
      */
     public JwtAuthenticationFilter(TokenService tokenService,
-                                   UsuarioService usuarioService,
-                                   GerenciadorDeAcessoDeUsuarioRepository acessoRepo) {
+                                   UsuarioService usuarioService) {
         this.tokenService = tokenService;
         this.usuarioService = usuarioService;
-        this.gerenciadoDeAcesso = acessoRepo;
     }
 
     /**
@@ -65,6 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = recuperarToken(request);
         String uri = request.getRequestURI();
+        
+        System.out.println("[DEBUG] URI interceptada: " + uri + " - Método: " + request.getMethod());
+
 
         // Permite livre acesso às rotas públicas
         if (uri.endsWith("/auth/login") || uri.endsWith("/auth/deslogar")) {
