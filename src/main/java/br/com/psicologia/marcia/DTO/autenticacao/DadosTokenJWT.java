@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.DTO.autenticacao;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import br.com.psicologia.marcia.model.Role;
 
 /**
  * DTO de resposta para o login, contendo o token JWT, nome do usuário e perfil (role).
@@ -11,9 +11,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public record DadosTokenJWT(
 		String token, 
-		String login, 
-		@JsonProperty("role")
-		String perfil) {}
+		String login, 		 
+		Role perfil) {}
 
 
 	 

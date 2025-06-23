@@ -28,8 +28,14 @@ COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/
 [FEITO] * Retirar 100@ a a entidade e repositorio responsavel pelo status_login GerenciadorDeAcessoDeUsuarioRepository e a entidade GerenciadorDeAcessoDeUsuario
         Vai com calma porque estas classes estão interligadas com o sistema de segurança
         
-        * Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT E criar uma tabela chamada analitcs para inicialmente
-        receber todos os erros e mensagens do servidor e para cada api adicione o que o usuário está fazendo naquele endpoint 
+[FAZENDO] 
+
+		* Criação de perfis de usuario. Inicialmente apenas criando os perfis, e não as configurações de acesso de cada, isso 
+		será feito posteriormente
+		
+
+		* Reestruturar todas as mensagens sincronizadas dos enddpoint de autenticação e afins com a estrutura JWT E criar uma tabela chamada analitcs para inicialmente
+          receber todos os erros e mensagens do servidor e para cada api adicione o que o usuário está fazendo naquele endpoint 
         
         
         A propósta: (sem código por enquanto, apenas conversa)EU quero criar uma espécie de analitcs no meu app, quero criar uma entidade que traga 
@@ -37,11 +43,13 @@ COISAS QUE ESQUECI ENTRE O FRONT E BACK COM A NOVA IMPLANTAÇÃO DO JWT (20/jun/
         partir do filtro e também registrar o request do backend, tipo, o que o frontend soliciou, quantas vezes foi feito e qual foi 
         a resposta do servidor
         
-        
+        * Configuração de todos os perfis de acesso: USER, ADMIN e SUPER_ADMIN
         
         
 
 PRÓXIMAS IMPLANTAÇÕES
+
+
 
 
 

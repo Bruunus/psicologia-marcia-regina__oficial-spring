@@ -53,12 +53,8 @@ public class UsuarioService implements UserDetailsService {
         } else {
         	
         	user.setSenha(passwordEncoder.encode(user.getPassword()));
+        	user.setRole(user.getRole());
         	userRepository.save(user);
-        	
-//        	GerenciadorDeAcessoDeUsuario usuarioGerenciavel = new GerenciadorDeAcessoDeUsuario();
-//        	usuarioGerenciavel.setNome(user.getLogin());
-//        	usuarioGerenciavel.setStatusLogin(false);		// será atualizado
-//        	usuarioGerenciavel.setTime_stamp(LocalDateTime.now());
         	
         	return false;
         }
