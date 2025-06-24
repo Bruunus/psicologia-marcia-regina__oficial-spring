@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -30,6 +31,10 @@ public class Usuario implements UserDetails {
 
 	@Enumerated(EnumType.STRING)
 	private Role role;
+	
+	@Column(name = "cpf", nullable = false)
+	private String cpf;
+
 
 	
 //	@OneToOne(mappedBy = "usuario")
@@ -67,6 +72,14 @@ public class Usuario implements UserDetails {
 	
 	public void setRole(Role role) {
 		this.role = role;
+	}
+	
+	public String getCpf() {
+		return cpf;
+	}
+
+	public void setCpf(String cpf) {
+		this.cpf = cpf;
 	}
 	
 	
@@ -123,6 +136,8 @@ public class Usuario implements UserDetails {
     	// TODO Auto-generated method stub
     	return "Login: "+this.login+" "+"Senha: "+this.senha;
     }
+
+	
 	
 	
 	

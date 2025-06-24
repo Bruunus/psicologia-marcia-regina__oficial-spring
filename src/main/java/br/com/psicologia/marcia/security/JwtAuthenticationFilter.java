@@ -66,7 +66,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
         // Permite livre acesso às rotas públicas
-        if (uri.endsWith("/auth/login") || uri.endsWith("/auth/deslogar")) {
+        if (
+        		uri.equals("/edit/user/redefinir-senha") 	|| 
+        		uri.endsWith("/auth/login") 				|| 
+        		uri.endsWith("/auth/deslogar")			//	||
+//        		uri.contains("/edit/user/register")			// temporario quando o banco for resetado - precisa aqui e no springSecurity
+        			
+        		) {
             System.out.println("[INTERCEPTOR] Ignorando requisição pública: " + uri);
             filterChain.doFilter(request, response);
             return;

@@ -3,8 +3,6 @@ package br.com.psicologia.marcia.repository.usuario;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
 
@@ -26,6 +24,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      * @return Um Optional com o usuário, se encontrado.
      */
 	Optional<Usuario> findByIdAndLogin(Long id, String login);
+
+	
+	Optional<Usuario> findByLoginAndId(String login, Long id);
 
 	 
 
