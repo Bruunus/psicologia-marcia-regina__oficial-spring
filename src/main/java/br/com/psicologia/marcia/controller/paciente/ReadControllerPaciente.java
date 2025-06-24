@@ -1,5 +1,6 @@
 package br.com.psicologia.marcia.controller.paciente;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +28,17 @@ public class ReadControllerPaciente {
 		
 	
 	@GetMapping("/carregar-tela-home")
-	public ResponseEntity<List<ConsultaDTOCarregamentoTelaHome>> carregarDadosTelaHome() {
-		List<ConsultaDTOCarregamentoTelaHome> list = readPacienteService.carregarTelaHome();
-		return new ResponseEntity<>(list, HttpStatus.OK);
+	public ResponseEntity<?> carregarDadosTelaHome() {
+	    try {
+	        List<ConsultaDTOCarregamentoTelaHome> list = readPacienteService.carregarTelaHome();
+	        return ResponseEntity.ok(list);
+	    } catch (Exception e) {
+	        System.err.println("Erro ao carregar tela home: " + e.getMessage());
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	            .body(Collections.singletonMap("message", "Erro ao carregar dados da tela inicial"));
+	    }
 	}
+
 
 	@GetMapping("/search")
 	public ResponseEntity<?> pesquisaDePaciente(@RequestParam("name") String nome) {

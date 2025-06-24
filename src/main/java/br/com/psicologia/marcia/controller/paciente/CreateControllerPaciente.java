@@ -40,7 +40,7 @@ public class CreateControllerPaciente {
 			} else {
 				throw new RuntimeException();			}
 		} catch (RuntimeException e) {
-			e.getMessage();
+			System.err.println("Erro no cadastro de paciente: " + e.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 			.body(Collections.singletonMap("message", "Erro interno ao realizar cadastro"));
 		}

@@ -1,5 +1,7 @@
 package br.com.psicologia.marcia.repository.usuario;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,16 +15,17 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
 	UserDetails findBylogin(String login);
 	
-	
+	boolean existsByLogin(String login);
+
+
 	/**
-	 * Procura o nome de um usuário no banco de dados.
-	 * Usado para verificar a existência de um login específico.
-	 *
-	 * @param usuarioLogin o nome de login do usuário
-	 * @return o nome do usuário, se encontrado; {@code null} caso contrário
-	 */
-	@Query(value = "SELECT nome FROM gerenciador_de_acesso_de_usuario WHERE nome = :usuarioLogin", nativeQuery = true)
-	String procurarPorNome(@Param("usuarioLogin") String usuarioLogin);
+     * Busca um usuário com base no ID e login.
+     *
+     * @param id    ID do usuário.
+     * @param login Login do usuário.
+     * @return Um Optional com o usuário, se encontrado.
+     */
+	Optional<Usuario> findByIdAndLogin(Long id, String login);
 
 	 
 

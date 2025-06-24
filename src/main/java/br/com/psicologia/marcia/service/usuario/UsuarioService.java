@@ -1,5 +1,7 @@
 package br.com.psicologia.marcia.service.usuario;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,7 +22,7 @@ import br.com.psicologia.marcia.service.error.MessageError;
 public class UsuarioService implements UserDetailsService {
 
 	@Autowired
-	private UsuarioRepository userRepository;
+	private UsuarioRepository usuarioRepository;
 	
 	@Autowired
     private AuditoriaDeSessaoDeUsuarioService auditoriaService;
@@ -40,7 +42,7 @@ public class UsuarioService implements UserDetailsService {
 	
 	 
 	public UsuarioService(UsuarioRepository userRepository) {
-        this.userRepository = userRepository;
+        this.usuarioRepository = userRepository;
     }
 	 
 
@@ -48,13 +50,13 @@ public class UsuarioService implements UserDetailsService {
 	
 	public boolean registrarUsuario(Usuario user) {
 		
-		if (userRepository.findBylogin(user.getUsername()) != null) {
+		if (usuarioRepository.findBylogin(user.getUsername()) != null) {
             return true;
         } else {
         	
         	user.setSenha(passwordEncoder.encode(user.getPassword()));
         	user.setRole(user.getRole());
-        	userRepository.save(user);
+        	usuarioRepository.save(user);
         	
         	return false;
         }
@@ -72,7 +74,7 @@ public class UsuarioService implements UserDetailsService {
 		System.out.println("LOGIN RECEBIDO: " +username);
 		UsuarioService.usuario.setLogin(username);
 		
-		UserDetails findBylogin = userRepository.findBylogin(username);
+		UserDetails findBylogin = usuarioRepository.findBylogin(username);
 		
 		if(findBylogin == null) {
 			System.out.println("Usuário inexistente (UserDetails)");
@@ -86,25 +88,18 @@ public class UsuarioService implements UserDetailsService {
 	
 	
 	
-	
-	
-	
-	
 	/**
-	 * Verifica se este login fornecido é existente na tabela de usuários
-	 * @param loginHttp
-	 * @return
+	 * Verifica se existe um usuário com o login informado.
+	 *
+	 * @param login o login do usuário a ser verificado
+	 * @return true se o usuário NÃO existe, false se existe
 	 */
-	public boolean validacaoDeLogin(String loginHttp) {
-		System.out.println("Valor da pesquisa: "+loginHttp);
-		String usuario = userRepository.procurarPorNome(loginHttp);
-		if(usuario == null || usuario.equals("")) {
-			return true;
-		} else {
-			return false;
-		}
-		
+	public boolean validacaoDeLogin(String login) {
+	    return !usuarioRepository.existsByLogin(login);
 	}
+
+	
+	
 	
 	
 	
@@ -140,12 +135,37 @@ public class UsuarioService implements UserDetailsService {
 	        return "Erro ao processar logout: " + e.getMessage();
 	    }
 	}
+	
+	
+	
+	
 
 
 
 	
 	AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(String login) {
         return new AccessUserManagerRecord(login);
+    }
+
+
+
+
+	/**
+     * Exclui um usuário com base no login e ID fornecidos.
+     *
+     * @param login Login do usuário.
+     * @param id    ID do usuário.
+     * @return true se o usuário foi excluído com sucesso, false se não foi encontrado.
+     */
+    public boolean deletarUsuario(String login, Long id) {
+        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdAndLogin(id, login);
+
+        if (usuarioOptional.isPresent()) {
+            usuarioRepository.delete(usuarioOptional.get());
+            return true;
+        }
+
+        return false;
     }
 	
 
