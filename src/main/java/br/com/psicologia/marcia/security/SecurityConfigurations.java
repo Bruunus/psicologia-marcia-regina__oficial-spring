@@ -54,7 +54,8 @@ public class SecurityConfigurations {
 				.authorizeHttpRequests(auth -> auth
 		                .requestMatchers(
 		                		"/auth/login",
-		                		"/auth/deslogar"//,
+		                		"/auth/deslogar",
+		                		"/edit/user/redefinir-senha"
 //		                		"/edit/user/register"	// temporario quando o banco for resetado - precisa aqui e no doFilterInternal
 		                		).permitAll()
 		                .anyRequest().authenticated()
