@@ -1,0 +1,45 @@
+oi tudo bem? Gostaria de conversar com voce sobre um projeto de desenvolvimento fullstack, porém por enquanto não precisa me passar nenhum codigo, até porque o projeto já está em andamento e estou em fase de dev, mas preciso te apresentar ele e até onde eu parei pois preciso terminar e conto com a sua ajuda pra finalizarmos ele.
+
+
+
+Eu estou criando um app web do ramo de psicologia, onde ele irá gerenciar o paciente e euxiliar o profissional de psicologia no período de tratamento do paciente. Então o paciente é cadastrado, e, após o cadastramento ele ganha um perfil relacionado a ele, onde, acessando esse perfil o profissional de psicologia pode: visualizar as suas informações de cadastramento, criar documentos de relatórios, laudo psicoloógico, gerenciar os custos financeiros dele e outros recursos. O sistema trabalha com dois tipos de perfil: Psicologia e Neuropsicologia, e um paciente pode ser migrado de um para o outro. O sistema também pode agendar consultas prévias com o paciente e após finalizar o tratamento relaizado pelo profissional os dados do paciente ficam armazenados em um tipo de histórico onde os documentos gerados por ele pode ser consultado apenas para visualização.
+
+Tecnologias: È aqui que precisarei bastante da sua ajuda.
+
+No frontend estou usando angular, html, scss e javascript e algumas bibliotecas para formulários e formatações
+
+No backend Java, com spring mvc, spring boot, spring data, no banco de dados estou usando mariaDB
+
+
+
+Ultimas atualizações que fiz no inicio de junho
+
+
+Os passos que ja atualizei até esses dias atras são:  A parte de segurança no backend:
+
+	-	Implementei o spring security 
+	-	Implementei toda a parte de gerenciamento de login com JWT
+	- Implementei um filtro JWT doInternalFilter e ele ignora apenas 3 requisições junto com o spring security: /login /logout e /gerar-nova-senha
+	as urls não são corretas, mas é mais pra voce ter uma noção.
+
+
+Agora a minha próxima tarefa é implementar um servido próprio similiar ao analitcs para poder capturar as requisições para me gerar leads e informações no banco de dados para melhor analize, comecei e implementar mas vou precisar da sua ajuda para finalizar, quero uma tarefa por vez, quando finalizar um aguarde meu comando para irmos para apróxima, porém já irei te dando o scopo 
+
+
+Criar a entidade RequisicaoAnalitica
+
+Criar o repositório e service
+
+Criar um filtro ou interceptor global para capturar as requisições
+
+Persistir os dados no banco via service
+
+Esse passo ja foi concluido !
+
+
+Agora falta os próximos
+
+
+
+
+ 

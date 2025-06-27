@@ -1,4 +1,4 @@
-package br.com.psicologia.marcia.model;
+package br.com.psicologia.marcia.model.enums;
 
 public enum Perfil {
 	PSICOLOGIA,

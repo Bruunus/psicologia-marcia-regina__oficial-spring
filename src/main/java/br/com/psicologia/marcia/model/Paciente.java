@@ -3,6 +3,8 @@ package br.com.psicologia.marcia.model;
 import java.time.LocalDate;
 import java.util.List;
 
+import br.com.psicologia.marcia.model.enums.Perfil;
+import br.com.psicologia.marcia.model.enums.StatusPaciente;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

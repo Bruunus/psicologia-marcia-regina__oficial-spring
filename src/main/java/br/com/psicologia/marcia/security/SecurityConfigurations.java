@@ -12,6 +12,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.service.analytics.RequisicaoAnaliticaService;
+import br.com.psicologia.marcia.service.analytics.SuporteAnalytics;
 import br.com.psicologia.marcia.service.usuario.UsuarioService;
 
 /**
@@ -47,16 +49,18 @@ public class SecurityConfigurations {
 	@Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, 
     		TokenService tokenService,
-    		UsuarioService usuarioService) throws Exception {
+    		UsuarioService usuarioService,
+    		RequisicaoAnaliticaService requisicaoAnaliticaService,
+    		SuporteAnalytics suporteAnalytics) throws Exception {
 		return http
 				.csrf(csrf -> csrf.disable())
 				.cors(cors -> cors.disable())
 				.authorizeHttpRequests(auth -> auth
 		                .requestMatchers(
 		                		"/auth/login",
-		                		"/auth/deslogar",
-		                		"/edit/user/redefinir-senha"
-//		                		"/edit/user/register"	// temporario quando o banco for resetado - precisa aqui e no doFilterInternal
+		                		"/auth/deslogar",	
+		                		"/edit/user/redefinir-senha",
+		                		"/edit/user/register"	// temporario quando o banco for resetado - precisa aqui e no doFilterInternal
 		                		).permitAll()
 		                .anyRequest().authenticated()
 				
@@ -68,7 +72,8 @@ public class SecurityConfigurations {
 					
 
 		            )
-		            .addFilterBefore(new JwtAuthenticationFilter(tokenService, usuarioService),
+		            .addFilterBefore(new JwtAuthenticationFilter
+		            		(tokenService, usuarioService, requisicaoAnaliticaService, suporteAnalytics),
 		                    UsernamePasswordAuthenticationFilter.class)
 		            .build();
 				       

@@ -1,13 +1,21 @@
 package br.com.psicologia.marcia.security;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import br.com.psicologia.marcia.model.Analitics;
+import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.service.analytics.RequisicaoAnaliticaService;
+import br.com.psicologia.marcia.service.analytics.StatusCapturingResponseWrapper;
+import br.com.psicologia.marcia.service.analytics.SuporteAnalytics;
 import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -22,15 +30,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioService usuarioService;
+    
+    @Autowired
+    private RequisicaoAnaliticaService requisicaoAnaliticaService;
+
+    @Autowired
+    private SuporteAnalytics suporteAnalytics;
 
 
     /**
      * Construtor para injeção de dependências.
      */
     public JwtAuthenticationFilter(TokenService tokenService,
-                                   UsuarioService usuarioService) {
+                                   UsuarioService usuarioService,
+                                   RequisicaoAnaliticaService requisicaoAnaliticaService,
+                                   SuporteAnalytics suporteAnalytics) {
         this.tokenService = tokenService;
         this.usuarioService = usuarioService;
+        this.requisicaoAnaliticaService = requisicaoAnaliticaService;
+        this.suporteAnalytics = suporteAnalytics;
     }
 
     /**
@@ -97,10 +115,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            UserDetails userDetails = usuarioService.loadUserByUsername(login);
+//            UserDetails userDetails = usuarioService.loadUserByUsername(login);
+            Usuario usuario = (Usuario) usuarioService.loadUserByUsername(login);
+
 
             UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -113,7 +133,56 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Continua com a cadeia de filtros
-        filterChain.doFilter(request, response);
+//        filterChain.doFilter(request, response);
+        
+        
+     // Início da medição de tempo
+        long inicio = System.currentTimeMillis();
+
+        // Wrappa a resposta para poder ler o status depois
+        StatusCapturingResponseWrapper responseWrapper = new StatusCapturingResponseWrapper(response);
+
+        // Executa a cadeia de filtros
+        filterChain.doFilter(request, responseWrapper);
+
+        // Fim da medição
+        long fim = System.currentTimeMillis();
+        long duracao = fim - inicio;
+        
+   
+
+        // Monta objeto Analitics
+        Analitics ra = new Analitics();
+        ra.setEndpoint(uri);
+        ra.setMetodo(request.getMethod());
+        ra.setDataHora(LocalDateTime.now());
+        ra.setIp(suporteAnalytics.capturarIpCliente(request));
+        ra.setDuracao(duracao);
+        ra.setStatusHttp(responseWrapper.getStatus());
+        ra.setUserAgent(request.getHeader("User-Agent"));
+        
+
+        // Se autenticado, salva o login do usuário
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof Usuario usuario) {
+            ra.setUsuario(usuario.getUsername()); // ou getLogin(), dependendo do nome
+            ra.setRole(usuario.getRole());        // novo campo que você adicionou
+        }
+        
+        // Objetivo da requisição
+        String endpoint = request.getRequestURI();
+        ra.setEndpoint(endpoint);
+        ra.setObjective(suporteAnalytics.mapearObjetivo(endpoint));
+
+
+
+        // Exemplo básico de resposta curta (você pode adaptar depois para capturar mensagens específicas)
+        ra.setRespostaCurta(responseWrapper.getStatus() == 200 ? "OK" : "Erro " + responseWrapper.getStatus());
+
+        // Persiste via service
+        requisicaoAnaliticaService.salvar(ra);
+
+        
     }
 
 

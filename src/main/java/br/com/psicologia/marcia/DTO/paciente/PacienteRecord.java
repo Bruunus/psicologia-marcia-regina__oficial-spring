@@ -4,8 +4,8 @@ import java.time.LocalDate;
 
 import br.com.psicologia.marcia.DTO.endereco.EnderecoRecord;
 import br.com.psicologia.marcia.DTO.queixa.QueixaRecord;
-import br.com.psicologia.marcia.model.Perfil;
-import br.com.psicologia.marcia.model.StatusPaciente;
+import br.com.psicologia.marcia.model.enums.Perfil;
+import br.com.psicologia.marcia.model.enums.StatusPaciente;
 
 public record PacienteRecord(
 		

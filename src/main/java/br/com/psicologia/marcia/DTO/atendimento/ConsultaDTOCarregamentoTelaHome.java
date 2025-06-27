@@ -2,7 +2,7 @@ package br.com.psicologia.marcia.DTO.atendimento;
 
 import java.time.LocalDate;
 
-import br.com.psicologia.marcia.model.Perfil;
+import br.com.psicologia.marcia.model.enums.Perfil;
 
 public class ConsultaDTOCarregamentoTelaHome {
 	

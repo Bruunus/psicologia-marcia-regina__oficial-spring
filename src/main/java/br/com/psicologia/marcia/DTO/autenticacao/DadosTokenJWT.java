@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.DTO.autenticacao;
 
-import br.com.psicologia.marcia.model.Role;
+import br.com.psicologia.marcia.model.enums.Role;
 
 /**
  * DTO de resposta para o login, contendo o token JWT, nome do usuário e perfil (role).

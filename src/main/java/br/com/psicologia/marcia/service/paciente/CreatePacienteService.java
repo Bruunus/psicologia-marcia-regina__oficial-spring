@@ -8,7 +8,7 @@ import br.com.psicologia.marcia.model.Atendimento;
 import br.com.psicologia.marcia.model.Endereco;
 import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.model.Queixa;
-import br.com.psicologia.marcia.model.StatusPaciente;
+import br.com.psicologia.marcia.model.enums.StatusPaciente;
 import br.com.psicologia.marcia.repository.atendimento.AtendimentoRepository;
 import br.com.psicologia.marcia.repository.paciente.CreatePacienteRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.EnderecoRepository;
