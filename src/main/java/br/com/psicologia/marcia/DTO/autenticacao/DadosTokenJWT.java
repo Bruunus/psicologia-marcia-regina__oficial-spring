@@ -12,7 +12,7 @@ import br.com.psicologia.marcia.model.enums.Role;
 public record DadosTokenJWT(
 		String token, 
 		String login, 		 
-		Role perfil) {}
+		Role role) {}
 
 
 	 
