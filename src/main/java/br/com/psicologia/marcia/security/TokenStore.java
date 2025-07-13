@@ -5,6 +5,7 @@ package br.com.psicologia.marcia.security;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 
@@ -17,6 +18,9 @@ import org.springframework.stereotype.Component;
 public class TokenStore {
 
     private static final Map<String, String> tokenMap = new ConcurrentHashMap<>();
+    
+    @Autowired
+    private TokenService tokenService;
 
     /**
      * Registra um novo token JWT vinculado ao login do usuário.
@@ -54,7 +58,22 @@ public class TokenStore {
      * @param login O login do usuário.
      * @return true se o usuário já estiver logado (token presente), false caso contrário.
      */
-    public static boolean usuarioJaLogado(String login) {
-        return tokenMap.containsKey(login);
+    public  boolean usuarioJaLogado(String login) {
+        String token = tokenMap.get(login);
+        
+        if (token == null) {
+            return false;
+        }
+        
+     // Verifica se o token ainda é válido
+        try {
+        	tokenService.getSubject(token);  // ou getSubject(token), se lançar exceção
+            return true;
+        } catch (RuntimeException e) {
+            // Token expirado ou inválido → remove e retorna false
+            tokenMap.remove(login);
+            return false;
+        }
+        
     }
 }

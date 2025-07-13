@@ -33,6 +33,9 @@ public class ControllerLogin {
 	@Autowired
 	private TokenService tokenService;
 	
+	@Autowired
+	private TokenStore tokenStore;
+	
 	
 	@Autowired
 	private MessageError messageErro;
@@ -61,7 +64,7 @@ public class ControllerLogin {
 	        
 	        var login = ((UserDetails) autenticacao.getPrincipal()).getUsername();
 	        
-	        if (TokenStore.usuarioJaLogado(login)) {
+	        if (tokenStore.usuarioJaLogado(login)) {
 	        	messageErro.setMessage("usuario_ja_logado");
 	        	System.err.println("Este usuário já está logado");
 			    return ResponseEntity.status(HttpStatus.CONFLICT).body(messageErro.getMessage());
