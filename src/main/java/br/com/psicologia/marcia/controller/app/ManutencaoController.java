@@ -16,14 +16,14 @@ import br.com.psicologia.marcia.model.BugsEmanutencao;
 import br.com.psicologia.marcia.repository.app.ManutencaoInterface;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/api")
 public class ManutencaoController {
 
 	@Autowired
 	private ManutencaoInterface manutencaoInterface;
 	
 	
-	@PostMapping("ocorrencia/registrar")
+	@PostMapping("/ocorrencia/registrar")
 	public ResponseEntity<?> registrarProblema(@RequestBody BugsEmanutencao problema) {		
 		try {
 			manutencaoInterface.save(problema);
@@ -37,7 +37,7 @@ public class ManutencaoController {
 	
 	
 	
-	@GetMapping("ocorrencia/carregar")
+	@GetMapping("/ocorrencia/carregar")
 	public ResponseEntity<?> carrregarOcorrencias() {
 		List<BugsEmanutencao> list = manutencaoInterface.findByDeletadoFalse();
 		return new ResponseEntity<>(list, HttpStatus.OK);
@@ -46,7 +46,7 @@ public class ManutencaoController {
 	
 	
 	
-	@DeleteMapping("ocorrencia/finalizar")
+	@DeleteMapping("/ocorrencia/finalizar")
 	public ResponseEntity<String> finalizarBug(@RequestBody BugsEmanutencao bug) {
 	    try {
 	        // Verifica se existe algum Bug com a tela e o problema fornecidos E que não tenha sido marcado como deletado

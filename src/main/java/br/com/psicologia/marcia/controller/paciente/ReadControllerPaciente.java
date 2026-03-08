@@ -19,7 +19,7 @@ import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
 import br.com.psicologia.marcia.service.paciente.ReadPacienteService;
 
 @RestController
-@RequestMapping("/paciente")
+@RequestMapping("/api/paciente")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ReadControllerPaciente {
 	

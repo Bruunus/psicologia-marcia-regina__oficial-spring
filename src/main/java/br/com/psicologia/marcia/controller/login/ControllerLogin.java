@@ -23,7 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 //@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ControllerLogin {
 

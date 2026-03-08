@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,28 +22,32 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Filtro JWT que intercepta todas as requisições HTTP para validar o token JWT,
- * autenticar o usuário e verificar se ele ainda está com sessão ativa.
+ * Filtro responsável por validar o JWT das requisições protegidas.
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioService usuarioService;
-    
+
     @Autowired
     private RequisicaoAnaliticaService requisicaoAnaliticaService;
 
     @Autowired
     private SuporteAnalytics suporteAnalytics;
 
-
     /**
-     * Construtor para injeção de dependências.
+     * Construtor do filtro JWT.
+     *
+     * @param tokenService service de token
+     * @param usuarioService service de usuário
+     * @param requisicaoAnaliticaService service de analytics
+     * @param suporteAnalytics suporte de analytics
      */
-    public JwtAuthenticationFilter(TokenService tokenService,
-                                   UsuarioService usuarioService,
-                                   RequisicaoAnaliticaService requisicaoAnaliticaService,
-                                   SuporteAnalytics suporteAnalytics) {
+    public JwtAuthenticationFilter(
+            TokenService tokenService,
+            UsuarioService usuarioService,
+            RequisicaoAnaliticaService requisicaoAnaliticaService,
+            SuporteAnalytics suporteAnalytics) {
         this.tokenService = tokenService;
         this.usuarioService = usuarioService;
         this.requisicaoAnaliticaService = requisicaoAnaliticaService;
@@ -52,76 +55,80 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Filtro responsável por interceptar todas as requisições HTTP para aplicar a autenticação baseada em JWT.
-     * 
-     * <p>Este filtro realiza as seguintes etapas:</p>
-     * <ul>
-     *   <li>Permite acesso sem autenticação às rotas públicas: <code>/auth/login</code> e <code>/auth/deslogar</code>.</li>
-     *   <li>Verifica se o token JWT está presente no cabeçalho <code>Authorization</code>.</li>
-     *   <li>Caso o token esteja ausente, responde com erro HTTP 401 (Unauthorized).</li>
-     *   <li>Caso o token esteja presente, valida sua autenticidade e verifica se está registrado no {@link TokenStore}.</li>
-     *   <li>Se o token for válido, recupera os dados do usuário e o autentica no contexto do Spring Security.</li>
-     *   <li>Se inválido ou expirado, retorna erro HTTP 401 (Unauthorized).</li>
-     * </ul>
-     * 
-     * @param request      a requisição HTTP recebida
-     * @param response     a resposta HTTP que será enviada
-     * @param filterChain  a cadeia de filtros a ser executada se a autenticação for bem-sucedida
-     * 
-     * @throws ServletException se ocorrer um erro no processamento da requisição
-     * @throws IOException      se ocorrer um erro de I/O durante o filtro
+     * Executa a interceptação e validação do token JWT.
+     *
+     * @param request requisição HTTP
+     * @param response resposta HTTP
+     * @param filterChain cadeia de filtros
+     * @throws ServletException erro de servlet
+     * @throws IOException erro de IO
      */
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
-        String token = recuperarToken(request);
+        // Recupera URI da requisição
         String uri = request.getRequestURI();
-        
+
+        // Recupera token do header Authorization
+        String token = recuperarToken(request);
+
         System.out.println("[DEBUG] URI interceptada: " + uri + " - Método: " + request.getMethod());
 
-
-        // Permite livre acesso às rotas públicas
-        if (
-        		uri.equals("/edit/user/redefinir-senha") 	|| 
-        		uri.endsWith("/auth/login") 				|| 
-        		uri.endsWith("/auth/deslogar")				||
-        		uri.contains("/edit/user/register")			// temporario quando o banco for resetado - precisa aqui e no springSecurity
-        			
-        		) {
-            System.out.println("[INTERCEPTOR] Ignorando requisição pública: " + uri);
+        // Ignora qualquer rota que NÃO seja da API
+        if (!uri.startsWith("/api")) {
+            System.out.println("[INTERCEPTOR] Ignorando rota do frontend/estático: " + uri);
             filterChain.doFilter(request, response);
             return;
         }
 
-        //  Token ausente → Bloqueia com erro 401
+        // Ignora rotas públicas da API
+        if (uri.equals("/api/edit/user/redefinir-senha")
+                || uri.equals("/api/edit/user/register")
+                || uri.equals("/api/auth/login")
+                || uri.equals("/api/auth/deslogar")) {
+
+            System.out.println("[INTERCEPTOR] Ignorando requisição pública da API: " + uri);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Se não houver token, bloqueia acesso às rotas protegidas
         if (token == null || token.isBlank()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token ausente. É necessário estar autenticado.");
             return;
         }
 
-        // Token presente → validação
         try {
+            // Extrai login do token
             String login = tokenService.getSubject(token);
 
+            // Valida token no TokenStore
             if (!TokenStore.tokenValido(login, token)) {
-            	String messageError = "Token presente, mas inválido ou expirado.";
+                String messageError = "Token presente, mas inválido ou expirado.";
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write(messageError);
                 System.err.print(messageError);
                 return;
             }
 
-//            UserDetails userDetails = usuarioService.loadUserByUsername(login);
+            // Carrega usuário autenticado
             Usuario usuario = (Usuario) usuarioService.loadUserByUsername(login);
 
-
+            // Monta autenticação do Spring Security
             UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                    new UsernamePasswordAuthenticationToken(
+                            usuario,
+                            null,
+                            usuario.getAuthorities()
+                    );
+
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+            // Registra autenticação no contexto
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             System.out.println("Usuário autenticado via JWT: " + login);
@@ -132,27 +139,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Continua com a cadeia de filtros
-//        filterChain.doFilter(request, response);
-        
-        
-     // Início da medição de tempo
+        // Início da medição de tempo da requisição
         long inicio = System.currentTimeMillis();
 
-        // Wrappa a resposta para poder ler o status depois
+        // Wrapper para capturar status HTTP final
         StatusCapturingResponseWrapper responseWrapper = new StatusCapturingResponseWrapper(response);
 
-        // Executa a cadeia de filtros
+        // Continua cadeia de filtros
         filterChain.doFilter(request, responseWrapper);
 
         // Fim da medição
         long fim = System.currentTimeMillis();
         long duracao = fim - inicio;
-        
-   
 
-        // Monta objeto Analitics
+        // Cria registro analítico
         Analitics ra = new Analitics();
+
+        // Preenche dados principais
         ra.setEndpoint(uri);
         ra.setMetodo(request.getMethod());
         ra.setDataHora(LocalDateTime.now());
@@ -160,46 +163,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         ra.setDuracao(duracao);
         ra.setStatusHttp(responseWrapper.getStatus());
         ra.setUserAgent(request.getHeader("User-Agent"));
-        
 
-        // Se autenticado, salva o login do usuário
+        // Recupera autenticação atual
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        // Se houver usuário autenticado, registra no analytics
         if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof Usuario usuario) {
-            ra.setUsuario(usuario.getUsername()); // ou getLogin(), dependendo do nome
-            ra.setRole(usuario.getRole());        // novo campo que você adicionou
+            ra.setUsuario(usuario.getUsername());
+            ra.setRole(usuario.getRole());
         }
-        
-        // Objetivo da requisição
+
+        // Define endpoint e objetivo
         String endpoint = request.getRequestURI();
         ra.setEndpoint(endpoint);
         ra.setObjective(suporteAnalytics.mapearObjetivo(endpoint));
 
-
-
-        // Exemplo básico de resposta curta (você pode adaptar depois para capturar mensagens específicas)
+        // Define resumo da resposta
         ra.setRespostaCurta(responseWrapper.getStatus() == 200 ? "OK" : "Erro " + responseWrapper.getStatus());
 
-        // Persiste via service
+        // Salva analytics
         requisicaoAnaliticaService.salvar(ra);
-
-        
     }
 
-
-
-
-
-
-
-
     /**
-     * Extrai o token JWT do cabeçalho Authorization.
+     * Recupera o token Bearer do header Authorization.
+     *
+     * @param request requisição HTTP
+     * @return token JWT ou null
      */
     private String recuperarToken(HttpServletRequest request) {
+        // Obtém o header Authorization
         String authHeader = request.getHeader("Authorization");
+
+        // Verifica se contém Bearer token
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.replace("Bearer ", "");
         }
+
         return null;
     }
 }

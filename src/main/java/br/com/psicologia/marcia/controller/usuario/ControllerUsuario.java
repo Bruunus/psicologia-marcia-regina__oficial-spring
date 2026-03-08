@@ -20,7 +20,7 @@ import br.com.psicologia.marcia.service.usuario.UsuarioService;
 import jakarta.annotation.security.RolesAllowed;
 
 @RestController
-@RequestMapping("/edit/user")
+@RequestMapping("/api/edit/user")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ControllerUsuario {
 

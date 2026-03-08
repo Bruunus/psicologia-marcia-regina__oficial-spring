@@ -17,7 +17,7 @@ import jakarta.validation.Valid;
 
 
 @RestController
-@RequestMapping("/paciente")
+@RequestMapping("/api/paciente")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class CreateControllerPaciente {
 
