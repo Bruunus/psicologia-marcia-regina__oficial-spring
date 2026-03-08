@@ -23,7 +23,6 @@ jobs:
         run: mvn clean package -DskipTests
 
       - name: Localizar JAR gerado
-        id: find_jar
         shell: bash
         run: |
           set -e
@@ -58,14 +57,12 @@ jobs:
             "$JAR_FILE" \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/psicologia-marcia-regina-v.01.jar"
 
-      - name: Rebuildar e subir container na VPS
+      - name: Executar deploy na VPS
         shell: bash
         run: |
           set -e
           ssh -p "${{ secrets.VPS_PORT }}" \
             -i ~/.ssh/id_ed25519 \
             -o StrictHostKeyChecking=no \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" << EOF
-            cd "${{ secrets.VPS_APP_DIR }}"
-            docker compose up -d --build
-          EOF
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "sudo /usr/local/bin/psicologia-deploy"
