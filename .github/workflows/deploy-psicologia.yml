@@ -22,6 +22,19 @@ jobs:
       - name: Buildar o projeto Spring
         run: mvn clean package -DskipTests
 
+      - name: Localizar JAR gerado
+        id: find_jar
+        shell: bash
+        run: |
+          set -e
+          JAR_FILE=$(find target -maxdepth 1 -type f -name "*.jar" ! -name "*.original" | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Nenhum arquivo .jar encontrado em target/"
+            exit 1
+          fi
+          echo "JAR_FILE=$JAR_FILE" >> $GITHUB_ENV
+          echo "Jar encontrado: $JAR_FILE"
+
       - name: Configurar chave SSH
         shell: bash
         run: |
@@ -39,8 +52,8 @@ jobs:
           scp -P "${{ secrets.VPS_PORT }}" \
             -i ~/.ssh/id_ed25519 \
             -o StrictHostKeyChecking=yes \
-            target/psicologia-marcia-regina-v.01.jar \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/"
+            "$JAR_FILE" \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_APP_DIR }}/psicologia-marcia-regina-v.01.jar"
 
       - name: Rebuildar e subir container na VPS
         shell: bash
