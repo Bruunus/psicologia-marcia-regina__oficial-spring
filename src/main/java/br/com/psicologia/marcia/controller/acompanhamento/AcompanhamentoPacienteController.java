@@ -3,6 +3,9 @@ package br.com.psicologia.marcia.controller.acompanhamento;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.acompanhamento.AcompanhamentoPacienteResponseDTO;
 import br.com.psicologia.marcia.DTO.acompanhamento.CriarAcompanhamentoPacienteDTO;
+import br.com.psicologia.marcia.DTO.acompanhamento.DocumentoHistoricoAtendimentoGeradoDTO;
+import br.com.psicologia.marcia.DTO.acompanhamento.EmitirHistoricoAtendimentoRequestDTO;
 import br.com.psicologia.marcia.service.acompanhamento.AcompanhamentoPacienteService;
+import br.com.psicologia.marcia.service.acompanhamento.DocumentoHistoricoAtendimentoService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -24,9 +30,14 @@ import jakarta.validation.Valid;
 public class AcompanhamentoPacienteController {
 
     private final AcompanhamentoPacienteService acompanhamentoPacienteService;
+    private final DocumentoHistoricoAtendimentoService documentoHistoricoAtendimentoService;
 
-    public AcompanhamentoPacienteController(AcompanhamentoPacienteService acompanhamentoPacienteService) {
+    public AcompanhamentoPacienteController(
+            AcompanhamentoPacienteService acompanhamentoPacienteService,
+            DocumentoHistoricoAtendimentoService documentoHistoricoAtendimentoService
+    ) {
         this.acompanhamentoPacienteService = acompanhamentoPacienteService;
+        this.documentoHistoricoAtendimentoService = documentoHistoricoAtendimentoService;
     }
 
     @PostMapping("/paciente/{pacienteId}")
@@ -40,6 +51,14 @@ public class AcompanhamentoPacienteController {
         URI uri = URI.create("/api/acompanhamentos/" + acompanhamentoCriado.getId());
 
         return ResponseEntity.created(uri).body(acompanhamentoCriado);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<AcompanhamentoPacienteResponseDTO>> listarTodos() {
+        List<AcompanhamentoPacienteResponseDTO> acompanhamentos =
+                acompanhamentoPacienteService.listarTodos();
+
+        return ResponseEntity.ok(acompanhamentos);
     }
 
     @GetMapping("/paciente/{pacienteId}")
@@ -101,4 +120,38 @@ public class AcompanhamentoPacienteController {
 
         return ResponseEntity.ok(acompanhamentos);
     }
+
+    @PostMapping("/emitir-historico")
+    public ResponseEntity<byte[]> emitirHistorico(
+            @Valid @RequestBody EmitirHistoricoAtendimentoRequestDTO dto
+    ) {
+        DocumentoHistoricoAtendimentoGeradoDTO documentoGerado =
+                documentoHistoricoAtendimentoService.gerarDocumentoHistorico(dto);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                ))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(documentoGerado.getNomeArquivo())
+                                .build()
+                                .toString()
+                )
+                .body(documentoGerado.getDocumento());
+    }
+    
+    
+    @PatchMapping("/{acompanhamentoId}/cancelar-ausencia")
+    public ResponseEntity<AcompanhamentoPacienteResponseDTO> cancelarAusencia(
+            @PathVariable Long acompanhamentoId
+    ) {
+        AcompanhamentoPacienteResponseDTO response =
+                acompanhamentoPacienteService.cancelarAusencia(acompanhamentoId);
+
+        return ResponseEntity.ok(response);
+    }
+    
+    
 }

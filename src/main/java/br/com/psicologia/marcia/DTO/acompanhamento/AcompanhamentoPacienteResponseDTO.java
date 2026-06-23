@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.DTO.acompanhamento;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import br.com.psicologia.marcia.model.AcompanhamentoPaciente;
@@ -12,8 +12,10 @@ public class AcompanhamentoPacienteResponseDTO {
     private Long pacienteId;
     private String sigiloEtico;
     private String acompanhamento;
-    private LocalDate dataAcompanhamento;
+    private LocalDateTime dataAcompanhamento;
     private String dataAcompanhamentoFormatada;
+    private String horaAcompanhamentoFormatada;
+    private String dataHoraAcompanhamentoFormatada;
     private Boolean pacienteAusente;
     private StatusDelete statusDelete;
 
@@ -27,16 +29,34 @@ public class AcompanhamentoPacienteResponseDTO {
         this.acompanhamento = acompanhamentoPaciente.getAcompanhamento();
         this.dataAcompanhamento = acompanhamentoPaciente.getDataAcompanhamento();
         this.dataAcompanhamentoFormatada = formatarData(acompanhamentoPaciente.getDataAcompanhamento());
+        this.horaAcompanhamentoFormatada = formatarHora(acompanhamentoPaciente.getDataAcompanhamento());
+        this.dataHoraAcompanhamentoFormatada = formatarDataHora(acompanhamentoPaciente.getDataAcompanhamento());
         this.pacienteAusente = acompanhamentoPaciente.getPacienteAusente();
         this.statusDelete = acompanhamentoPaciente.getStatusDelete();
     }
 
-    private String formatarData(LocalDate data) {
+    private String formatarData(LocalDateTime data) {
         if (data == null) {
             return null;
         }
 
         return data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    private String formatarHora(LocalDateTime data) {
+        if (data == null) {
+            return null;
+        }
+
+        return data.format(DateTimeFormatter.ofPattern("HH:mm'hs'"));
+    }
+
+    private String formatarDataHora(LocalDateTime data) {
+        if (data == null) {
+            return null;
+        }
+
+        return data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm'hs'"));
     }
 
     public Long getId() {
@@ -55,12 +75,20 @@ public class AcompanhamentoPacienteResponseDTO {
         return acompanhamento;
     }
 
-    public LocalDate getDataAcompanhamento() {
+    public LocalDateTime getDataAcompanhamento() {
         return dataAcompanhamento;
     }
 
     public String getDataAcompanhamentoFormatada() {
         return dataAcompanhamentoFormatada;
+    }
+
+    public String getHoraAcompanhamentoFormatada() {
+        return horaAcompanhamentoFormatada;
+    }
+
+    public String getDataHoraAcompanhamentoFormatada() {
+        return dataHoraAcompanhamentoFormatada;
     }
 
     public Boolean getPacienteAusente() {
@@ -87,12 +115,20 @@ public class AcompanhamentoPacienteResponseDTO {
         this.acompanhamento = acompanhamento;
     }
 
-    public void setDataAcompanhamento(LocalDate dataAcompanhamento) {
+    public void setDataAcompanhamento(LocalDateTime dataAcompanhamento) {
         this.dataAcompanhamento = dataAcompanhamento;
     }
 
     public void setDataAcompanhamentoFormatada(String dataAcompanhamentoFormatada) {
         this.dataAcompanhamentoFormatada = dataAcompanhamentoFormatada;
+    }
+
+    public void setHoraAcompanhamentoFormatada(String horaAcompanhamentoFormatada) {
+        this.horaAcompanhamentoFormatada = horaAcompanhamentoFormatada;
+    }
+
+    public void setDataHoraAcompanhamentoFormatada(String dataHoraAcompanhamentoFormatada) {
+        this.dataHoraAcompanhamentoFormatada = dataHoraAcompanhamentoFormatada;
     }
 
     public void setPacienteAusente(Boolean pacienteAusente) {

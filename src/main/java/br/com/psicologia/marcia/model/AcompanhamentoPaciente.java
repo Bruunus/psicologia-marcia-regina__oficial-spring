@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.model;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import br.com.psicologia.marcia.model.enums.StatusDelete;
 import jakarta.persistence.Basic;
@@ -39,10 +39,10 @@ public class AcompanhamentoPaciente {
     @Column(name = "acompanhamento", columnDefinition = "LONGTEXT")
     private String acompanhamento;
 
-    @Column(name = "data_acompanhamento", nullable = false)
-    private LocalDate dataAcompanhamento;
+    @Column(name = "data_acompanhamento", nullable = false, columnDefinition = "DATETIME")
+    private LocalDateTime dataAcompanhamento;
 
-    @Column(name = "paciente_ausente", nullable = false)
+    @Column(name = "paciente_ausente", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean pacienteAusente = false;
 
     @Enumerated(EnumType.STRING)
@@ -56,7 +56,7 @@ public class AcompanhamentoPaciente {
             Paciente paciente,
             String sigiloEtico,
             String acompanhamento,
-            LocalDate dataAcompanhamento
+            LocalDateTime dataAcompanhamento
     ) {
         this.paciente = paciente;
         this.sigiloEtico = sigiloEtico;
@@ -82,7 +82,7 @@ public class AcompanhamentoPaciente {
         return acompanhamento;
     }
 
-    public LocalDate getDataAcompanhamento() {
+    public LocalDateTime getDataAcompanhamento() {
         return dataAcompanhamento;
     }
 
@@ -110,7 +110,7 @@ public class AcompanhamentoPaciente {
         this.acompanhamento = acompanhamento;
     }
 
-    public void setDataAcompanhamento(LocalDate dataAcompanhamento) {
+    public void setDataAcompanhamento(LocalDateTime dataAcompanhamento) {
         this.dataAcompanhamento = dataAcompanhamento;
     }
 

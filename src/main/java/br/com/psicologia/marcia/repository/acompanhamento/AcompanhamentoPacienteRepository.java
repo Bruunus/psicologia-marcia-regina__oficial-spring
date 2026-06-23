@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.repository.acompanhamento;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +13,16 @@ import br.com.psicologia.marcia.model.enums.StatusDelete;
 @Repository
 public interface AcompanhamentoPacienteRepository extends JpaRepository<AcompanhamentoPaciente, Long> {
 
+    List<AcompanhamentoPaciente> findByStatusDeleteOrderByDataAcompanhamentoDesc(
+            StatusDelete statusDelete
+    );
+
     List<AcompanhamentoPaciente> findByPacienteIdAndStatusDeleteOrderByDataAcompanhamentoDesc(
+            Long pacienteId,
+            StatusDelete statusDelete
+    );
+
+    List<AcompanhamentoPaciente> findByPacienteIdAndStatusDeleteOrderByDataAcompanhamentoAsc(
             Long pacienteId,
             StatusDelete statusDelete
     );
@@ -23,9 +32,9 @@ public interface AcompanhamentoPacienteRepository extends JpaRepository<Acompanh
             StatusDelete statusDelete
     );
 
-    Optional<AcompanhamentoPaciente> findByPacienteIdAndDataAcompanhamentoAndStatusDelete(
+    Optional<AcompanhamentoPaciente> findByPacienteIdAndDataAcompanhamentoAndPacienteAusenteFalseAndStatusDelete(
             Long pacienteId,
-            LocalDate dataAcompanhamento,
+            LocalDateTime dataAcompanhamento,
             StatusDelete statusDelete
     );
 

@@ -1,6 +1,6 @@
 package br.com.psicologia.marcia.service.acompanhamento;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -30,24 +30,36 @@ public class AcompanhamentoPacienteService {
     }
 
     @Transactional
-    public AcompanhamentoPacienteResponseDTO criar(Long pacienteId, CriarAcompanhamentoPacienteDTO dto) {
+    public AcompanhamentoPacienteResponseDTO criar(
+            Long pacienteId,
+            CriarAcompanhamentoPacienteDTO dto
+    ) {
         Paciente paciente = buscarPacientePorId(pacienteId);
 
-        LocalDate dataHoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
-
-        validarSeJaExisteAcompanhamentoNaData(pacienteId, dataHoje);
+        LocalDateTime dataHoraAtual = LocalDateTime.now(ZoneId.of("America/Sao_Paulo"));
 
         AcompanhamentoPaciente acompanhamentoPaciente = new AcompanhamentoPaciente();
+
         acompanhamentoPaciente.setPaciente(paciente);
-        acompanhamentoPaciente.setSigiloEtico(dto.getSigiloEtico());
-        acompanhamentoPaciente.setAcompanhamento(dto.getAcompanhamento());
-        acompanhamentoPaciente.setDataAcompanhamento(dataHoje);
+        acompanhamentoPaciente.setSigiloEtico(normalizarTextoPermitindoVazio(dto.getSigiloEtico()));
+        acompanhamentoPaciente.setAcompanhamento(normalizarTextoPermitindoVazio(dto.getAcompanhamento()));
+        acompanhamentoPaciente.setDataAcompanhamento(dataHoraAtual);
         acompanhamentoPaciente.setPacienteAusente(false);
         acompanhamentoPaciente.setStatusDelete(StatusDelete.NAO_DELETADO);
 
-        AcompanhamentoPaciente acompanhamentoSalvo = acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
+        AcompanhamentoPaciente acompanhamentoSalvo =
+                acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
 
         return new AcompanhamentoPacienteResponseDTO(acompanhamentoSalvo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AcompanhamentoPacienteResponseDTO> listarTodos() {
+        return acompanhamentoPacienteRepository
+                .findByStatusDeleteOrderByDataAcompanhamentoDesc(StatusDelete.NAO_DELETADO)
+                .stream()
+                .map(AcompanhamentoPacienteResponseDTO::new)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -66,7 +78,8 @@ public class AcompanhamentoPacienteService {
 
     @Transactional(readOnly = true)
     public AcompanhamentoPacienteResponseDTO buscarPorId(Long acompanhamentoId) {
-        AcompanhamentoPaciente acompanhamentoPaciente = buscarAcompanhamentoAtivoPorId(acompanhamentoId);
+        AcompanhamentoPaciente acompanhamentoPaciente =
+                buscarAcompanhamentoAtivoPorId(acompanhamentoId);
 
         return new AcompanhamentoPacienteResponseDTO(acompanhamentoPaciente);
     }
@@ -76,19 +89,22 @@ public class AcompanhamentoPacienteService {
             Long acompanhamentoId,
             CriarAcompanhamentoPacienteDTO dto
     ) {
-        AcompanhamentoPaciente acompanhamentoPaciente = buscarAcompanhamentoAtivoPorId(acompanhamentoId);
+        AcompanhamentoPaciente acompanhamentoPaciente =
+                buscarAcompanhamentoAtivoPorId(acompanhamentoId);
 
-        acompanhamentoPaciente.setSigiloEtico(dto.getSigiloEtico());
-        acompanhamentoPaciente.setAcompanhamento(dto.getAcompanhamento());
+        acompanhamentoPaciente.setSigiloEtico(normalizarTextoPermitindoVazio(dto.getSigiloEtico()));
+        acompanhamentoPaciente.setAcompanhamento(normalizarTextoPermitindoVazio(dto.getAcompanhamento()));
 
-        AcompanhamentoPaciente acompanhamentoAtualizado = acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
+        AcompanhamentoPaciente acompanhamentoAtualizado =
+                acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
 
         return new AcompanhamentoPacienteResponseDTO(acompanhamentoAtualizado);
     }
 
     @Transactional
     public void excluirFalso(Long acompanhamentoId) {
-        AcompanhamentoPaciente acompanhamentoPaciente = buscarAcompanhamentoAtivoPorId(acompanhamentoId);
+        AcompanhamentoPaciente acompanhamentoPaciente =
+                buscarAcompanhamentoAtivoPorId(acompanhamentoId);
 
         acompanhamentoPaciente.setStatusDelete(StatusDelete.DELETADO);
 
@@ -97,11 +113,26 @@ public class AcompanhamentoPacienteService {
 
     @Transactional
     public AcompanhamentoPacienteResponseDTO registrarAusencia(Long acompanhamentoId) {
-        AcompanhamentoPaciente acompanhamentoPaciente = buscarAcompanhamentoAtivoPorId(acompanhamentoId);
+        AcompanhamentoPaciente acompanhamentoPaciente =
+                buscarAcompanhamentoAtivoPorId(acompanhamentoId);
 
         acompanhamentoPaciente.setPacienteAusente(true);
 
-        AcompanhamentoPaciente acompanhamentoAtualizado = acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
+        AcompanhamentoPaciente acompanhamentoAtualizado =
+                acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
+
+        return new AcompanhamentoPacienteResponseDTO(acompanhamentoAtualizado);
+    }
+
+    @Transactional
+    public AcompanhamentoPacienteResponseDTO cancelarAusencia(Long acompanhamentoId) {
+        AcompanhamentoPaciente acompanhamento =
+                buscarAcompanhamentoAtivoPorId(acompanhamentoId);
+
+        acompanhamento.setPacienteAusente(false);
+
+        AcompanhamentoPaciente acompanhamentoAtualizado =
+                acompanhamentoPacienteRepository.save(acompanhamento);
 
         return new AcompanhamentoPacienteResponseDTO(acompanhamentoAtualizado);
     }
@@ -121,7 +152,8 @@ public class AcompanhamentoPacienteService {
     }
 
     private Paciente buscarPacientePorId(Long pacienteId) {
-        return readPacienteRepository.findById(pacienteId)
+        return readPacienteRepository
+                .findById(pacienteId)
                 .orElseThrow(() -> new RuntimeException("Paciente não encontrado."));
     }
 
@@ -131,17 +163,7 @@ public class AcompanhamentoPacienteService {
                 .orElseThrow(() -> new RuntimeException("Acompanhamento não encontrado."));
     }
 
-    private void validarSeJaExisteAcompanhamentoNaData(Long pacienteId, LocalDate dataAcompanhamento) {
-        boolean acompanhamentoJaExiste = acompanhamentoPacienteRepository
-                .findByPacienteIdAndDataAcompanhamentoAndStatusDelete(
-                        pacienteId,
-                        dataAcompanhamento,
-                        StatusDelete.NAO_DELETADO
-                )
-                .isPresent();
-
-        if (acompanhamentoJaExiste) {
-            throw new RuntimeException("Já existe acompanhamento cadastrado para este paciente na data de hoje.");
-        }
+    private String normalizarTextoPermitindoVazio(String texto) {
+        return texto == null ? "" : texto;
     }
 }
