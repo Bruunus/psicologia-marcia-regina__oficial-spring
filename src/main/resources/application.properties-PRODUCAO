@@ -1,0 +1,14 @@
+spring.application.name=psicologia-marcia-regina__oficial-spring
+
+spring.datasource.url=${DB_URL:jdbc:mariadb://localhost:3306/psicologia_marcia_test}
+spring.datasource.username=${DB_USER:root}
+spring.datasource.password=${DB_PASS:root}
+spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+
+spring.jpa.hibernate.ddl-auto=${JPA_DDL_AUTO:update}
+spring.jpa.properties.hibernate.show_sql=${JPA_SHOW_SQL:true}
+
+api.security.token.secret=${JWT_SECRET:12345678901234567890123456789012}
+
+# 30 minutos em milissegundos
+jwt.expiracao=${JWT_EXPIRATION_MS:1800000}
