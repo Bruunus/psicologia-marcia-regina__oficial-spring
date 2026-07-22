@@ -11,22 +11,18 @@ import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTabStop;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTabs;
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTabJc;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.acompanhamento.DocumentoHistoricoAtendimentoGeradoDTO;
 import br.com.psicologia.marcia.DTO.acompanhamento.EmitirHistoricoAtendimentoRequestDTO;
 import br.com.psicologia.marcia.model.AcompanhamentoPaciente;
-import br.com.psicologia.marcia.model.Endereco;
 import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.model.Psicologo;
 import br.com.psicologia.marcia.model.enums.StatusDelete;
 import br.com.psicologia.marcia.model.enums.TipoPapelDocumento;
 import br.com.psicologia.marcia.repository.acompanhamento.AcompanhamentoPacienteRepository;
+import br.com.psicologia.marcia.service.documento.BlocoIdentificacaoDocumentoService;
 import br.com.psicologia.marcia.service.documento.Cabecalho;
 import br.com.psicologia.marcia.service.documento.ConfiguracaoDocumento;
 import br.com.psicologia.marcia.service.documento.Rodape;
@@ -37,77 +33,69 @@ public class DocumentoHistoricoAtendimentoService {
 
     private static final String FONTE_TEXTO = "Arial";
 
-    /*
-     * Ajustes aproximados de paginação.
-     *
-     * O Apache POI não renderiza o documento como o Word/LibreOffice.
-     * Por isso, a posição final da assinatura é calculada por estimativa.
-     */
     private static final int LINHAS_BASE_ANTES_PRONTUARIO = 13;
+
     private static final int LINHAS_ASSINATURA = 5;
+
     private static final int LINHAS_MARGEM_INFERIOR_ASSINATURA = 2;
+
     private static final int CARACTERES_POR_LINHA_PRONTUARIO = 92;
 
     private final AcompanhamentoPacienteRepository acompanhamentoPacienteRepository;
+
     private final PsicologoService psicologoService;
+
     private final Cabecalho cabecalho;
+
     private final Rodape rodape;
+
     private final ConfiguracaoDocumento configuracaoDocumento;
+
+    private final BlocoIdentificacaoDocumentoService blocoIdentificacaoDocumentoService;
 
     public DocumentoHistoricoAtendimentoService(
             AcompanhamentoPacienteRepository acompanhamentoPacienteRepository,
             PsicologoService psicologoService,
             Cabecalho cabecalho,
             Rodape rodape,
-            ConfiguracaoDocumento configuracaoDocumento
+            ConfiguracaoDocumento configuracaoDocumento,
+            BlocoIdentificacaoDocumentoService blocoIdentificacaoDocumentoService
     ) {
         this.acompanhamentoPacienteRepository = acompanhamentoPacienteRepository;
         this.psicologoService = psicologoService;
         this.cabecalho = cabecalho;
         this.rodape = rodape;
         this.configuracaoDocumento = configuracaoDocumento;
+        this.blocoIdentificacaoDocumentoService = blocoIdentificacaoDocumentoService;
     }
 
     @Transactional(readOnly = true)
-    public DocumentoHistoricoAtendimentoGeradoDTO gerarDocumentoHistorico(
-            EmitirHistoricoAtendimentoRequestDTO dto
-    ) {
-        List<AcompanhamentoPaciente> acompanhamentos =
-                buscarAcompanhamentosDoPacienteAteDataPresente(
-                        dto.getPacienteId(),
-                        dto.getDataAcompanhamento()
-                );
+    public DocumentoHistoricoAtendimentoGeradoDTO gerarDocumentoHistorico(EmitirHistoricoAtendimentoRequestDTO dto) {
+        List<AcompanhamentoPaciente> acompanhamentos = buscarAcompanhamentosDoPacienteAteDataPresente(
+                dto.getPacienteId(),
+                dto.getDataAcompanhamento()
+        );
 
         AcompanhamentoPaciente primeiroAcompanhamento = acompanhamentos.get(0);
         Paciente paciente = primeiroAcompanhamento.getPaciente();
         Psicologo psicologo = psicologoService.buscarPsicologoAtivoPrincipal();
-
-        TipoPapelDocumento tipoPapel =
-                configuracaoDocumento.normalizarTipoPapel(dto.getTipoPapel());
+        TipoPapelDocumento tipoPapel = configuracaoDocumento.normalizarTipoPapel(dto.getTipoPapel());
 
         try (
                 XWPFDocument documento = new XWPFDocument();
                 ByteArrayOutputStream saida = new ByteArrayOutputStream()
         ) {
             configuracaoDocumento.configurar(documento, tipoPapel);
-
             cabecalho.criar(documento, psicologo, tipoPapel);
             rodape.criar(documento);
 
             criarEspaco(documento, 2);
             criarTituloIdentificacao(documento);
-            criarIdentificacaoPaciente(documento, paciente);
-
+            blocoIdentificacaoDocumentoService.criarDocx(documento, paciente);
             criarEspaco(documento, 2);
             criarTituloProntuario(documento);
             criarProntuario(documento, acompanhamentos);
-
-            posicionarAssinaturaNoFinalDaUltimaPagina(
-                    documento,
-                    acompanhamentos,
-                    psicologo,
-                    tipoPapel
-            );
+            posicionarAssinaturaNoFinalDaUltimaPagina(documento, acompanhamentos, psicologo, tipoPapel);
 
             documento.write(saida);
 
@@ -124,21 +112,20 @@ public class DocumentoHistoricoAtendimentoService {
             Long pacienteId,
             LocalDateTime dataLimite
     ) {
-        List<AcompanhamentoPaciente> acompanhamentos =
-                acompanhamentoPacienteRepository
-                        .findByPacienteIdAndStatusDeleteOrderByDataAcompanhamentoAsc(
-                                pacienteId,
-                                StatusDelete.NAO_DELETADO
-                        )
-                        .stream()
-                        .filter(acompanhamento -> {
-                            if (dataLimite == null || acompanhamento.getDataAcompanhamento() == null) {
-                                return true;
-                            }
+        List<AcompanhamentoPaciente> acompanhamentos = acompanhamentoPacienteRepository
+                .findByPacienteIdAndStatusDeleteOrderByDataAcompanhamentoAsc(
+                        pacienteId,
+                        StatusDelete.NAO_DELETADO
+                )
+                .stream()
+                .filter(acompanhamento -> {
+                    if (dataLimite == null || acompanhamento.getDataAcompanhamento() == null) {
+                        return true;
+                    }
 
-                            return !acompanhamento.getDataAcompanhamento().isAfter(dataLimite);
-                        })
-                        .toList();
+                    return !acompanhamento.getDataAcompanhamento().isAfter(dataLimite);
+                })
+                .toList();
 
         if (acompanhamentos.isEmpty()) {
             throw new RuntimeException("Nenhum acompanhamento encontrado para emissão.");
@@ -149,120 +136,33 @@ public class DocumentoHistoricoAtendimentoService {
 
     private void criarTituloIdentificacao(XWPFDocument documento) {
         XWPFParagraph paragrafo = documento.createParagraph();
+
         paragrafo.setAlignment(ParagraphAlignment.CENTER);
         paragrafo.setSpacingBefore(260);
         paragrafo.setSpacingAfter(420);
 
         XWPFRun run = paragrafo.createRun();
+
         aplicarFontePadrao(run);
         run.setBold(true);
         run.setText("Identificação");
     }
 
-    private void criarIdentificacaoPaciente(
-            XWPFDocument documento,
-            Paciente paciente
-    ) {
-        XWPFParagraph linhaNomeCpf = criarParagrafoIdentificacao(documento);
-        adicionarTextoNegrito(linhaNomeCpf, "Nome: ");
-        adicionarTextoNormal(linhaNomeCpf, valor(paciente.getNomeCompleto()));
-        adicionarTabulacao(linhaNomeCpf, 4100);
-        adicionarTextoNegrito(linhaNomeCpf, "CPF: ");
-        adicionarTextoNormal(linhaNomeCpf, valor(paciente.getCpf()));
-
-        XWPFParagraph linhaDnIdade = criarParagrafoIdentificacao(documento);
-        adicionarTextoNegrito(linhaDnIdade, "DN: ");
-        adicionarTextoNormal(linhaDnIdade, formatarDataNascimento(paciente));
-        adicionarTabulacao(linhaDnIdade, 4100);
-        adicionarTextoNegrito(linhaDnIdade, "Idade: ");
-        adicionarTextoNormal(linhaDnIdade, formatarIdade(paciente));
-
-        XWPFParagraph linhaEndereco = criarParagrafoIdentificacao(documento);
-        adicionarTextoNegrito(linhaEndereco, "Endereço: ");
-        adicionarTextoNormal(linhaEndereco, montarEnderecoPaciente(paciente));
-
-        XWPFParagraph linhaTelefoneContato = criarParagrafoIdentificacao(documento);
-        adicionarTextoNegrito(linhaTelefoneContato, "Tel. contato: ");
-        adicionarTextoNormal(linhaTelefoneContato, valor(paciente.getTelefoneContato()));
-
-        if (
-                paciente.getTelefone() != null &&
-                        !paciente.getTelefone().isBlank() &&
-                        !paciente.getTelefone().equals(paciente.getTelefoneContato())
-        ) {
-            XWPFParagraph linhaTelefone = criarParagrafoIdentificacao(documento);
-            adicionarTextoNegrito(linhaTelefone, "Tel: ");
-            adicionarTextoNormal(linhaTelefone, valor(paciente.getTelefone()));
-        }
-    }
-
-    private XWPFParagraph criarParagrafoIdentificacao(XWPFDocument documento) {
-        XWPFParagraph paragrafo = documento.createParagraph();
-        paragrafo.setAlignment(ParagraphAlignment.LEFT);
-        paragrafo.setSpacingAfter(170);
-
-        return paragrafo;
-    }
-
-    private void adicionarTabulacao(
-            XWPFParagraph paragrafo,
-            int posicaoTwips
-    ) {
-        CTPPr pPr = paragrafo.getCTP().getPPr();
-
-        if (pPr == null) {
-            pPr = paragrafo.getCTP().addNewPPr();
-        }
-
-        CTTabs tabs = pPr.getTabs();
-
-        if (tabs == null) {
-            tabs = pPr.addNewTabs();
-        }
-
-        CTTabStop tabStop = tabs.addNewTab();
-        tabStop.setVal(STTabJc.LEFT);
-        tabStop.setPos(java.math.BigInteger.valueOf(posicaoTwips));
-
-        XWPFRun tabRun = paragrafo.createRun();
-        tabRun.addTab();
-    }
-
-    private void adicionarTextoNegrito(
-            XWPFParagraph paragrafo,
-            String texto
-    ) {
-        XWPFRun run = paragrafo.createRun();
-        aplicarFontePadrao(run);
-        run.setBold(true);
-        run.setText(texto);
-    }
-
-    private void adicionarTextoNormal(
-            XWPFParagraph paragrafo,
-            String texto
-    ) {
-        XWPFRun run = paragrafo.createRun();
-        aplicarFontePadrao(run);
-        run.setText(texto);
-    }
-
     private void criarTituloProntuario(XWPFDocument documento) {
         XWPFParagraph paragrafo = documento.createParagraph();
+
         paragrafo.setAlignment(ParagraphAlignment.CENTER);
         paragrafo.setSpacingBefore(450);
         paragrafo.setSpacingAfter(300);
 
         XWPFRun run = paragrafo.createRun();
+
         aplicarFontePadrao(run);
         run.setBold(true);
         run.setText("Prontuário");
     }
 
-    private void criarProntuario(
-            XWPFDocument documento,
-            List<AcompanhamentoPaciente> acompanhamentos
-    ) {
+    private void criarProntuario(XWPFDocument documento, List<AcompanhamentoPaciente> acompanhamentos) {
         int contadorSessao = 1;
 
         for (AcompanhamentoPaciente acompanhamento : acompanhamentos) {
@@ -283,30 +183,31 @@ public class DocumentoHistoricoAtendimentoService {
             int contadorSessao
     ) {
         XWPFParagraph paragrafo = documento.createParagraph();
+
         paragrafo.setAlignment(ParagraphAlignment.LEFT);
         paragrafo.setSpacingBefore(180);
         paragrafo.setSpacingAfter(120);
 
         XWPFRun dataRun = paragrafo.createRun();
+
         aplicarFontePadrao(dataRun);
         dataRun.setBold(true);
         dataRun.setText(formatarDataSessao(acompanhamento));
 
         XWPFRun sessaoRun = paragrafo.createRun();
+
         aplicarFontePadrao(sessaoRun);
         sessaoRun.setText(" – " + obterTextoOrdinalSessao(contadorSessao) + " Sessão");
 
         if (Boolean.TRUE.equals(acompanhamento.getPacienteAusente())) {
             XWPFRun faltaRun = paragrafo.createRun();
+
             aplicarFontePadrao(faltaRun);
             faltaRun.setText(" Falta do paciente");
         }
     }
 
-    private void criarTextoSessao(
-            XWPFDocument documento,
-            AcompanhamentoPaciente acompanhamento
-    ) {
+    private void criarTextoSessao(XWPFDocument documento, AcompanhamentoPaciente acompanhamento) {
         String textoAcompanhamento = obterTextoAcompanhamento(acompanhamento);
 
         if (textoAcompanhamento.isBlank()) {
@@ -314,11 +215,13 @@ public class DocumentoHistoricoAtendimentoService {
         }
 
         XWPFParagraph paragrafo = documento.createParagraph();
+
         paragrafo.setAlignment(ParagraphAlignment.BOTH);
         paragrafo.setIndentationFirstLine(720);
         paragrafo.setSpacingAfter(180);
 
         XWPFRun run = paragrafo.createRun();
+
         aplicarFontePadrao(run);
         adicionarTextoComQuebras(run, textoAcompanhamento);
     }
@@ -338,37 +241,29 @@ public class DocumentoHistoricoAtendimentoService {
         }
 
         int linhasDisponiveis = linhasPorPagina - restoUltimaPagina;
-        int linhasNecessariasParaAssinatura =
-                LINHAS_ASSINATURA + LINHAS_MARGEM_INFERIOR_ASSINATURA;
+        int linhasNecessariasParaAssinatura = LINHAS_ASSINATURA + LINHAS_MARGEM_INFERIOR_ASSINATURA;
 
         if (linhasDisponiveis < linhasNecessariasParaAssinatura) {
             criarQuebraDePagina(documento);
 
-            int linhasParaDescerNaNovaPagina =
-                    linhasPorPagina - linhasNecessariasParaAssinatura;
+            int linhasParaDescerNaNovaPagina = linhasPorPagina - linhasNecessariasParaAssinatura;
 
             criarEspaco(documento, Math.max(linhasParaDescerNaNovaPagina, 0));
             criarAssinatura(documento, psicologo);
-
             return;
         }
 
-        int linhasParaDescer =
-                linhasDisponiveis - linhasNecessariasParaAssinatura;
+        int linhasParaDescer = linhasDisponiveis - linhasNecessariasParaAssinatura;
 
         criarEspaco(documento, Math.max(linhasParaDescer, 0));
         criarAssinatura(documento, psicologo);
     }
 
-    private int calcularLinhasOcupadasAteAssinatura(
-            List<AcompanhamentoPaciente> acompanhamentos
-    ) {
+    private int calcularLinhasOcupadasAteAssinatura(List<AcompanhamentoPaciente> acompanhamentos) {
         return LINHAS_BASE_ANTES_PRONTUARIO + calcularLinhasProntuario(acompanhamentos);
     }
 
-    private int calcularLinhasProntuario(
-            List<AcompanhamentoPaciente> acompanhamentos
-    ) {
+    private int calcularLinhasProntuario(List<AcompanhamentoPaciente> acompanhamentos) {
         int totalLinhas = 0;
 
         for (AcompanhamentoPaciente acompanhamento : acompanhamentos) {
@@ -399,9 +294,7 @@ public class DocumentoHistoricoAtendimentoService {
             }
 
             int tamanho = linha.trim().length();
-            int linhasEstimadas = (int) Math.ceil(
-                    (double) tamanho / CARACTERES_POR_LINHA_PRONTUARIO
-            );
+            int linhasEstimadas = (int) Math.ceil((double) tamanho / CARACTERES_POR_LINHA_PRONTUARIO);
 
             totalLinhas += Math.max(linhasEstimadas, 1);
         }
@@ -412,43 +305,49 @@ public class DocumentoHistoricoAtendimentoService {
     private void criarQuebraDePagina(XWPFDocument documento) {
         XWPFParagraph paragrafo = documento.createParagraph();
         XWPFRun run = paragrafo.createRun();
+
         run.addBreak(BreakType.PAGE);
     }
 
-    private void criarAssinatura(
-            XWPFDocument documento,
-            Psicologo psicologo
-    ) {
+    private void criarAssinatura(XWPFDocument documento, Psicologo psicologo) {
         XWPFParagraph linha = documento.createParagraph();
+
         linha.setAlignment(ParagraphAlignment.CENTER);
         linha.setSpacingBefore(0);
         linha.setSpacingAfter(80);
 
         XWPFRun linhaRun = linha.createRun();
+
         aplicarFontePadrao(linhaRun);
         linhaRun.setText("________________________________________");
 
         XWPFParagraph nome = documento.createParagraph();
+
         nome.setAlignment(ParagraphAlignment.CENTER);
         nome.setSpacingAfter(80);
 
         XWPFRun nomeRun = nome.createRun();
+
         aplicarFontePadrao(nomeRun);
         nomeRun.setText(valor(psicologo.getNome()));
 
         XWPFParagraph funcao = documento.createParagraph();
+
         funcao.setAlignment(ParagraphAlignment.CENTER);
         funcao.setSpacingAfter(80);
 
         XWPFRun funcaoRun = funcao.createRun();
+
         aplicarFontePadrao(funcaoRun);
         funcaoRun.setText(valor(psicologo.getFuncaoEmpresa()));
 
         XWPFParagraph crp = documento.createParagraph();
+
         crp.setAlignment(ParagraphAlignment.CENTER);
         crp.setSpacingAfter(0);
 
         XWPFRun crpRun = crp.createRun();
+
         aplicarFontePadrao(crpRun);
         crpRun.setText("CRP: " + valor(psicologo.getCrp()));
     }
@@ -458,10 +357,7 @@ public class DocumentoHistoricoAtendimentoService {
         run.setFontSize(10);
     }
 
-    private void adicionarTextoComQuebras(
-            XWPFRun run,
-            String texto
-    ) {
+    private void adicionarTextoComQuebras(XWPFRun run, String texto) {
         String[] linhas = texto.split("\\R", -1);
 
         for (int i = 0; i < linhas.length; i++) {
@@ -473,16 +369,15 @@ public class DocumentoHistoricoAtendimentoService {
         }
     }
 
-    private void criarEspaco(
-            XWPFDocument documento,
-            int quantidade
-    ) {
+    private void criarEspaco(XWPFDocument documento, int quantidade) {
         for (int i = 0; i < quantidade; i++) {
             XWPFParagraph paragrafo = documento.createParagraph();
+
             paragrafo.setSpacingBefore(0);
             paragrafo.setSpacingAfter(0);
 
             XWPFRun run = paragrafo.createRun();
+
             run.addBreak();
         }
     }
@@ -492,68 +387,7 @@ public class DocumentoHistoricoAtendimentoService {
             return "";
         }
 
-        return acompanhamento
-                .getDataAcompanhamento()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-    }
-
-    private String formatarDataNascimento(Paciente paciente) {
-        if (paciente.getDataNascimento() == null) {
-            return "";
-        }
-
-        return paciente
-                .getDataNascimento()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-    }
-
-    private String formatarIdade(Paciente paciente) {
-        if (paciente.getIdade() == null) {
-            return "";
-        }
-
-        return paciente.getIdade() + " anos";
-    }
-
-    private String montarEnderecoPaciente(Paciente paciente) {
-        Endereco endereco = paciente.getEndereco();
-
-        if (endereco == null) {
-            return "";
-        }
-
-        StringBuilder enderecoFormatado = new StringBuilder();
-
-        adicionarParteEndereco(enderecoFormatado, endereco.getLogradouro());
-        adicionarParteEndereco(enderecoFormatado, endereco.getNumero());
-        adicionarParteEndereco(enderecoFormatado, endereco.getBairro());
-        adicionarParteEndereco(enderecoFormatado, endereco.getCidade());
-        adicionarParteEndereco(enderecoFormatado, endereco.getUf());
-
-        if (endereco.getCep() != null && !endereco.getCep().isBlank()) {
-            if (!enderecoFormatado.isEmpty()) {
-                enderecoFormatado.append(" - ");
-            }
-
-            enderecoFormatado.append(endereco.getCep());
-        }
-
-        return enderecoFormatado.toString();
-    }
-
-    private void adicionarParteEndereco(
-            StringBuilder endereco,
-            String parte
-    ) {
-        if (parte == null || parte.isBlank()) {
-            return;
-        }
-
-        if (!endereco.isEmpty()) {
-            endereco.append(",");
-        }
-
-        endereco.append(parte.trim());
+        return acompanhamento.getDataAcompanhamento().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     private String obterTextoOrdinalSessao(int numero) {
@@ -585,11 +419,7 @@ public class DocumentoHistoricoAtendimentoService {
     private String montarNomeArquivo(Paciente paciente) {
         String nomePaciente = "paciente";
 
-        if (
-                paciente != null &&
-                        paciente.getNomeCompleto() != null &&
-                        !paciente.getNomeCompleto().isBlank()
-        ) {
+        if (paciente != null && paciente.getNomeCompleto() != null && !paciente.getNomeCompleto().isBlank()) {
             nomePaciente = paciente.getNomeCompleto();
         }
 

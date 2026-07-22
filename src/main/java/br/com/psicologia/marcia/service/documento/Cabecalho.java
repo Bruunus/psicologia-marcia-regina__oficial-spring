@@ -31,37 +31,15 @@ import br.com.psicologia.marcia.model.enums.TipoPapelDocumento;
 @Service
 public class Cabecalho {
 
-    private static final String FONTE_CABECALHO = "Times New Roman";
+    private final DocumentoLayoutConfig documentoLayoutConfig;
 
-    private static final String CAMINHO_LOGO_CABECALHO = "documentos/imagens/logo-documento.jfif";
-    private static final String CAMINHO_DETALHE_CABECALHO = "documentos/imagens/ilustrador-de-documento.png";
+    public Cabecalho(DocumentoLayoutConfig documentoLayoutConfig) {
+        this.documentoLayoutConfig = documentoLayoutConfig;
+    }
 
-    private static final double LOGO_LARGURA_CM = 2.73;
-    private static final double LOGO_ALTURA_CM = 2.67;
+    public void criar(XWPFDocument documento, Psicologo psicologo, TipoPapelDocumento tipoPapel) {
+        TipoPapelDocumento tipoPapelNormalizado = documentoLayoutConfig.normalizarTipoPapel(tipoPapel);
 
-    private static final double DETALHE_LARGURA_CM = 3.78;
-    private static final double DETALHE_ALTURA_CM = 2.87;
-
-    private static final int LARGURA_TABELA_CABECALHO = 11520;
-
-    private static final int LARGURA_CELULA_LOGO = 2500;
-    private static final int LARGURA_CELULA_TEXTO = 6500;
-    private static final int LARGURA_CELULA_DETALHE = 2520;
-
-    /*
-     * Ajuste fino da posição horizontal do cabeçalho por tipo de papel.
-     *
-     * Mais negativo  = joga o cabeçalho para a esquerda.
-     * Menos negativo = joga o cabeçalho para a direita.
-     */
-    private static final int INDENTACAO_CABECALHO_A4 = -1080;  /* Se aumentar => direita | diminuir => esquerda */
-    private static final int INDENTACAO_CABECALHO_CARTA = -885;
-
-    public void criar(
-            XWPFDocument documento,
-            Psicologo psicologo,
-            TipoPapelDocumento tipoPapel
-    ) {
         XWPFHeaderFooterPolicy policy = documento.getHeaderFooterPolicy();
 
         if (policy == null) {
@@ -69,46 +47,48 @@ public class Cabecalho {
         }
 
         XWPFHeader header = policy.createHeader(XWPFHeaderFooterPolicy.DEFAULT);
+        XWPFTable tabela = header.createTable(1, 4);
 
-        XWPFTable tabela = header.createTable(1, 3);
-        configurarTabelaCabecalho(tabela, tipoPapel);
+        configurarTabelaCabecalho(tabela, tipoPapelNormalizado);
 
         XWPFTableCell celulaLogo = tabela.getRow(0).getCell(0);
         XWPFTableCell celulaTexto = tabela.getRow(0).getCell(1);
         XWPFTableCell celulaDetalhe = tabela.getRow(0).getCell(2);
+        XWPFTableCell celulaEspacoDireita = tabela.getRow(0).getCell(3);
 
         configurarCelulaCabecalho(celulaLogo);
         configurarCelulaCabecalho(celulaTexto);
         configurarCelulaCabecalho(celulaDetalhe);
+        configurarCelulaCabecalho(celulaEspacoDireita);
 
-        definirLarguraCelula(celulaLogo, LARGURA_CELULA_LOGO);
-        definirLarguraCelula(celulaTexto, LARGURA_CELULA_TEXTO);
-        definirLarguraCelula(celulaDetalhe, LARGURA_CELULA_DETALHE);
+        definirLarguraCelula(celulaLogo, documentoLayoutConfig.larguraCelulaLogoCabecalhoTwips());
+        definirLarguraCelula(celulaTexto, documentoLayoutConfig.larguraCelulaTextoCabecalhoTwips(tipoPapelNormalizado));
+        definirLarguraCelula(celulaDetalhe, documentoLayoutConfig.larguraCelulaDetalheCabecalhoTwips());
+        definirLarguraCelula(celulaEspacoDireita, documentoLayoutConfig.larguraCelulaEspacoDireitaCabecalhoTwips(tipoPapelNormalizado));
 
         criarImagemCabecalho(
                 celulaLogo,
-                CAMINHO_LOGO_CABECALHO,
+                documentoLayoutConfig.caminhoLogoCabecalho(),
                 ParagraphAlignment.LEFT,
-                LOGO_LARGURA_CM,
-                LOGO_ALTURA_CM
+                documentoLayoutConfig.logoLarguraCm(),
+                documentoLayoutConfig.logoAlturaCm()
         );
 
         criarTextoCabecalho(celulaTexto, psicologo);
 
         criarImagemCabecalho(
                 celulaDetalhe,
-                CAMINHO_DETALHE_CABECALHO,
+                documentoLayoutConfig.caminhoDetalheCabecalho(),
                 ParagraphAlignment.RIGHT,
-                DETALHE_LARGURA_CM,
-                DETALHE_ALTURA_CM
+                documentoLayoutConfig.detalheLarguraCm(),
+                documentoLayoutConfig.detalheAlturaCm()
         );
     }
 
-    private void configurarTabelaCabecalho(
-            XWPFTable tabela,
-            TipoPapelDocumento tipoPapel
-    ) {
-        tabela.setCellMargins(0, 0, 0, 0);
+    private void configurarTabelaCabecalho(XWPFTable tabela, TipoPapelDocumento tipoPapel) {
+        int margemSuperiorInterna = documentoLayoutConfig.margemSuperiorInternaCabecalhoTwips(tipoPapel);
+
+        tabela.setCellMargins(margemSuperiorInterna, 0, 0, 0);
 
         removerBordasTabela(tabela);
 
@@ -125,7 +105,7 @@ public class Cabecalho {
         }
 
         larguraTabela.setType(STTblWidth.DXA);
-        larguraTabela.setW(BigInteger.valueOf(LARGURA_TABELA_CABECALHO));
+        larguraTabela.setW(BigInteger.valueOf(documentoLayoutConfig.larguraTabelaCabecalhoTwips()));
 
         CTTblWidth indentacaoTabela = tblPr.getTblInd();
 
@@ -134,15 +114,7 @@ public class Cabecalho {
         }
 
         indentacaoTabela.setType(STTblWidth.DXA);
-        indentacaoTabela.setW(BigInteger.valueOf(obterIndentacaoCabecalho(tipoPapel)));
-    }
-
-    private int obterIndentacaoCabecalho(TipoPapelDocumento tipoPapel) {
-        if (tipoPapel == TipoPapelDocumento.CARTA) {
-            return INDENTACAO_CABECALHO_CARTA;
-        }
-
-        return INDENTACAO_CABECALHO_A4;
+        indentacaoTabela.setW(BigInteger.valueOf(documentoLayoutConfig.indentacaoCabecalhoTwips(tipoPapel)));
     }
 
     private void configurarCelulaCabecalho(XWPFTableCell celula) {
@@ -153,10 +125,7 @@ public class Cabecalho {
         }
     }
 
-    private void definirLarguraCelula(
-            XWPFTableCell celula,
-            int larguraTwips
-    ) {
+    private void definirLarguraCelula(XWPFTableCell celula, int larguraTwips) {
         CTTcPr tcPr = celula.getCTTc().getTcPr();
 
         if (tcPr == null) {
@@ -181,6 +150,7 @@ public class Cabecalho {
             double alturaCm
     ) {
         XWPFParagraph paragrafo = celula.addParagraph();
+
         paragrafo.setAlignment(alinhamento);
         paragrafo.setSpacingBefore(0);
         paragrafo.setSpacingAfter(0);
@@ -198,8 +168,8 @@ public class Cabecalho {
                     inputStream,
                     obterTipoImagem(caminhoImagem),
                     caminhoImagem,
-                    centimetrosParaEmu(larguraCm),
-                    centimetrosParaEmu(alturaCm)
+                    documentoLayoutConfig.centimetrosParaEmu(larguraCm),
+                    documentoLayoutConfig.centimetrosParaEmu(alturaCm)
             );
         } catch (IOException | InvalidFormatException e) {
             throw new RuntimeException("Erro ao carregar imagem do cabeçalho: " + caminhoImagem, e);
@@ -224,42 +194,42 @@ public class Cabecalho {
         return Document.PICTURE_TYPE_PNG;
     }
 
-    private int centimetrosParaEmu(double centimetros) {
-        return (int) Math.round(centimetros * 360000);
-    }
-
-    private void criarTextoCabecalho(
-            XWPFTableCell celula,
-            Psicologo psicologo
-    ) {
+    private void criarTextoCabecalho(XWPFTableCell celula, Psicologo psicologo) {
         XWPFParagraph paragrafoNome = celula.addParagraph();
+
         paragrafoNome.setAlignment(ParagraphAlignment.CENTER);
         paragrafoNome.setSpacingBefore(0);
         paragrafoNome.setSpacingAfter(20);
 
         XWPFRun nome = paragrafoNome.createRun();
+
         aplicarFonteCabecalho(nome);
         nome.setText(valor(psicologo.getNome()));
 
         XWPFParagraph paragrafoFuncao = celula.addParagraph();
+
         paragrafoFuncao.setAlignment(ParagraphAlignment.CENTER);
         paragrafoFuncao.setSpacingBefore(0);
         paragrafoFuncao.setSpacingAfter(20);
 
         XWPFRun funcao = paragrafoFuncao.createRun();
+
         aplicarFonteCabecalho(funcao);
         funcao.setText(valor(psicologo.getFuncaoEmpresa()) + " CRP:" + valor(psicologo.getCrp()));
 
         XWPFParagraph paragrafoContato = celula.addParagraph();
+
         paragrafoContato.setAlignment(ParagraphAlignment.CENTER);
         paragrafoContato.setSpacingBefore(0);
         paragrafoContato.setSpacingAfter(0);
 
         XWPFRun telefone = paragrafoContato.createRun();
+
         aplicarFonteCabecalho(telefone);
         telefone.setText("Tel. " + valor(psicologo.getTelefone()) + " e-mail: ");
 
         XWPFRun email = paragrafoContato.createRun();
+
         aplicarFonteCabecalho(email);
         email.setText(valor(psicologo.getEmail()));
         email.setColor("0000FF");
@@ -267,8 +237,8 @@ public class Cabecalho {
     }
 
     private void aplicarFonteCabecalho(XWPFRun run) {
-        run.setFontFamily(FONTE_CABECALHO);
-        run.setFontSize(11);
+        run.setFontFamily(documentoLayoutConfig.fonteCabecalho());
+        run.setFontSize(documentoLayoutConfig.tamanhoFonteCabecalho());
         run.setItalic(true);
     }
 
