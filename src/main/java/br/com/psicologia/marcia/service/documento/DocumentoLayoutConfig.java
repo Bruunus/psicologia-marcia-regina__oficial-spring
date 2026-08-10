@@ -26,6 +26,18 @@ public class DocumentoLayoutConfig {
     public int tamanhoFonteCabecalho() {
         return 11;
     }
+    
+    public String fonteRodape() {
+        return "Times New Roman";
+    }
+
+    public int tamanhoFonteRodape() {
+        return 11;
+    }
+
+    public boolean rodapeItalico() {
+        return true;
+    }
 
     public int tamanhoFonteTitulo() {
         return 16;
@@ -61,6 +73,22 @@ public class DocumentoLayoutConfig {
 
     public double detalheCabecalhoPdfAlturaCm() {
         return 2.87;
+    }
+    
+    public int larguraTabelaRodapeTwips() {
+        return 9000;
+    }
+
+    public int larguraCelulaTelefoneRodapeTwips() {
+        return 3700;
+    }
+
+    public int larguraCelulaLogoRodapeTwips() {
+        return 1600;
+    }
+
+    public int larguraCelulaEmailRodapeTwips() {
+        return 3700;
     }
 
     public int larguraPaginaTwips(TipoPapelDocumento tipoPapel) {
@@ -305,6 +333,10 @@ public class DocumentoLayoutConfig {
 
     public String linhaAssinatura() {
         return "________________________________________";
+    }
+    
+    public int ajusteHorizontalLogoRodapeTwips() {
+        return -180;
     }
 
     public int linhasAssinaturaDocx() {
