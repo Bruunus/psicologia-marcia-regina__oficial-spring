@@ -1,8 +1,11 @@
 package br.com.psicologia.marcia.service.laudo;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.psicologia.marcia.DTO.laudo.LaudoListaResponse;
 import br.com.psicologia.marcia.DTO.laudo.LaudoResponse;
 import br.com.psicologia.marcia.DTO.laudo.LaudoSalvarRequest;
 import br.com.psicologia.marcia.model.Laudo;
@@ -10,38 +13,71 @@ import br.com.psicologia.marcia.model.Paciente;
 import br.com.psicologia.marcia.repository.laudo.LaudoRepository;
 import br.com.psicologia.marcia.repository.paciente.ReadPacienteRepository;
 
+
 @Service
 public class LaudoService {
 
     private final LaudoRepository laudoRepository;
+
     private final ReadPacienteRepository readPacienteRepository;
+
 
     public LaudoService(
         LaudoRepository laudoRepository,
         ReadPacienteRepository readPacienteRepository
     ) {
-        this.laudoRepository = laudoRepository;
+
+        this.laudoRepository =
+            laudoRepository;
+
         this.readPacienteRepository =
             readPacienteRepository;
     }
+
+
+    /*
+     * ============================================================
+     * SALVAR
+     * ============================================================
+     */
 
     @Transactional
     public LaudoResponse salvar(
         LaudoSalvarRequest request
     ) {
-        validarRequest(request);
 
-        Paciente paciente = readPacienteRepository
-            .findById(request.pacienteId())
-            .orElseThrow(
-                () -> new RuntimeException(
-                    "Paciente não encontrado."
+        validarRequest(
+            request
+        );
+
+
+        Paciente paciente =
+            readPacienteRepository
+                .findById(
+                    request.pacienteId()
                 )
-            );
+                .orElseThrow(
+                    () ->
+                        new RuntimeException(
+                            "Paciente não encontrado."
+                        )
+                );
 
-        Laudo laudo = new Laudo();
 
-        laudo.setPaciente(paciente);
+        Laudo laudo =
+            new Laudo();
+
+
+        laudo.setPaciente(
+            paciente
+        );
+
+
+        /*
+         * ========================================================
+         * IDENTIFICAÇÃO
+         * ========================================================
+         */
 
         laudo.setDominanciaManual(
             limparTexto(
@@ -49,13 +85,16 @@ public class LaudoService {
             )
         );
 
+
         laudo.setPeriodoAvaliacaoInicio(
             request.periodoAvaliacaoInicio()
         );
 
+
         laudo.setPeriodoAvaliacaoFim(
             request.periodoAvaliacaoFim()
         );
+
 
         laudo.setEncaminhamento(
             limparTexto(
@@ -63,15 +102,30 @@ public class LaudoService {
             )
         );
 
+
+        /*
+         * ========================================================
+         * DESCRIÇÃO DA DEMANDA
+         * ========================================================
+         */
+
         laudo.setQueixa(
             limparTextoPreservandoQuebras(
                 request.queixa()
             )
         );
 
+
+        /*
+         * ========================================================
+         * PROCEDIMENTOS
+         * ========================================================
+         */
+
         laudo.setQuantidadeSessoes(
             request.quantidadeSessoes()
         );
+
 
         laudo.setPeriodo(
             limparTexto(
@@ -79,9 +133,11 @@ public class LaudoService {
             )
         );
 
+
         laudo.setDuracaoMinutos(
             request.duracaoMinutos()
         );
+
 
         laudo.setTestesPsicologicos(
             limparTextoPreservandoQuebras(
@@ -89,11 +145,13 @@ public class LaudoService {
             )
         );
 
+
         laudo.setTarefasEstudos(
             limparTextoPreservandoQuebras(
                 request.tarefasEstudos()
             )
         );
+
 
         laudo.setEscalasQuestionarios(
             limparTextoPreservandoQuebras(
@@ -101,11 +159,19 @@ public class LaudoService {
             )
         );
 
+
+        /*
+         * ========================================================
+         * ANÁLISE
+         * ========================================================
+         */
+
         laudo.setDadosAnamnese(
             limparTextoPreservandoQuebras(
                 request.dadosAnamnese()
             )
         );
+
 
         laudo.setDadosAtuais(
             limparTextoPreservandoQuebras(
@@ -113,11 +179,19 @@ public class LaudoService {
             )
         );
 
+
         laudo.setObservacoesClinicas(
             limparTextoPreservandoQuebras(
                 request.observacoesClinicas()
             )
         );
+
+
+        /*
+         * ========================================================
+         * CONCLUSÃO
+         * ========================================================
+         */
 
         laudo.setConclusao(
             limparTextoPreservandoQuebras(
@@ -125,59 +199,246 @@ public class LaudoService {
             )
         );
 
+
+        /*
+         * ========================================================
+         * DATA DE EMISSÃO
+         * ========================================================
+         */
+
+        laudo.setCidadeEmissao(
+            limparTexto(
+                request.cidadeEmissao()
+            )
+        );
+
+
+        laudo.setDiaEmissao(
+            request.diaEmissao()
+        );
+
+
+        laudo.setMesEmissao(
+            limparTexto(
+                request.mesEmissao()
+            )
+        );
+
+
+        laudo.setAnoEmissao(
+            request.anoEmissao()
+        );
+
+
+        /*
+         * ========================================================
+         * TABELAS / SEÇÕES
+         * ========================================================
+         */
+
         configurarEficienciaIntelectual(
             laudo,
             request
         );
+
 
         configurarSecoesOpcionais(
             laudo,
             request
         );
 
-        configurarSecoesObrigatorias(laudo);
 
-        laudo.setStatusDelete(false);
+        configurarSecoesObrigatorias(
+            laudo
+        );
+
+
+        /*
+         * ========================================================
+         * EXCLUSÃO LÓGICA
+         * ========================================================
+         */
+
+        laudo.setStatusDelete(
+            false
+        );
+
+
+        /*
+         * ========================================================
+         * PERSISTÊNCIA
+         * ========================================================
+         */
 
         Laudo laudoSalvo =
-            laudoRepository.save(laudo);
+            laudoRepository.save(
+                laudo
+            );
 
-        return converterParaResponse(laudoSalvo);
+
+        return converterParaResponse(
+            laudoSalvo
+        );
     }
+
+
+    /*
+     * ============================================================
+     * EXCLUIR
+     * ============================================================
+     */
+
+    @Transactional
+    public void excluir(
+        Long laudoId
+    ) {
+
+        if (
+            laudoId == null
+        ) {
+
+            throw new RuntimeException(
+                "O ID do laudo é obrigatório."
+            );
+        }
+
+
+        Laudo laudo =
+            laudoRepository
+                .findByIdAndStatusDeleteFalse(
+                    laudoId
+                )
+                .orElseThrow(
+                    () ->
+                        new RuntimeException(
+                            "Laudo psicológico não encontrado."
+                        )
+                );
+
+
+        laudo.setStatusDelete(
+            true
+        );
+
+
+        laudoRepository.save(
+            laudo
+        );
+    }
+
+
+    /*
+     * ============================================================
+     * LISTAR POR PACIENTE
+     * ============================================================
+     */
+
+    @Transactional(readOnly = true)
+    public List<LaudoListaResponse> listarPorPaciente(
+        Long pacienteId
+    ) {
+
+        if (
+            pacienteId == null
+        ) {
+
+            throw new RuntimeException(
+                "O ID do paciente é obrigatório."
+            );
+        }
+
+
+        return laudoRepository
+            .listarResumoPorPaciente(
+                pacienteId
+            );
+    }
+
+
+    /*
+     * ============================================================
+     * LISTAR COMPLETOS PARA O ARQUIVO DO PACIENTE
+     * ============================================================
+     */
+
+    @Transactional(readOnly = true)
+    public List<LaudoResponse> listarCompletosPorPaciente(
+        Long pacienteId
+    ) {
+
+        if (
+            pacienteId == null
+        ) {
+
+            throw new RuntimeException(
+                "O ID do paciente é obrigatório."
+            );
+        }
+
+
+        return laudoRepository
+            .findByPacienteIdAndStatusDeleteFalseOrderByDataCriacaoDesc(
+                pacienteId
+            )
+            .stream()
+            .map(
+                this::converterParaResponse
+            )
+            .toList();
+    }
+
+
+    /*
+     * ============================================================
+     * EFICIÊNCIA INTELECTUAL
+     * ============================================================
+     */
 
     private void configurarEficienciaIntelectual(
         Laudo laudo,
         LaudoSalvarRequest request
     ) {
+
         boolean incluirEficienciaIntelectual =
             valorBooleano(
                 request.incluirEficienciaIntelectual()
             );
 
+
         laudo.setIncluirEficienciaIntelectual(
             incluirEficienciaIntelectual
         );
 
-        if (incluirEficienciaIntelectual) {
-            laudo.setEficienciaIntelectual(
-                limparTextoPreservandoQuebras(
-                    request.eficienciaIntelectual()
-                )
-            );
-        } else {
-            laudo.setEficienciaIntelectual(null);
-        }
+
+        /*
+         * O campo textual pode permanecer nulo.
+         *
+         * A tabela/seção é controlada pelo boolean.
+         */
+
+        laudo.setEficienciaIntelectual(
+            null
+        );
     }
+
+
+    /*
+     * ============================================================
+     * SEÇÕES OPCIONAIS
+     * ============================================================
+     */
 
     private void configurarSecoesOpcionais(
         Laudo laudo,
         LaudoSalvarRequest request
     ) {
+
         laudo.setIncluirEscalaWasi(
             valorBooleano(
                 request.incluirEscalaWasi()
             )
         );
+
 
         laudo.setIncluirEscalaSrs2(
             valorBooleano(
@@ -186,98 +447,127 @@ public class LaudoService {
         );
     }
 
+
+    /*
+     * ============================================================
+     * SEÇÕES OBRIGATÓRIAS
+     * ============================================================
+     */
+
     private void configurarSecoesObrigatorias(
         Laudo laudo
     ) {
-        /*
-         * Estas seções sempre serão geradas no DOCX.
-         * No Angular, os respectivos checkboxes ficarão
-         * marcados e desabilitados.
-         */
+
         laudo.setIncluirFuncoesExecutivasAtencionais(
             true
         );
+
 
         laudo.setIncluirMemoriaVisualAuditivoVerbal(
             true
         );
 
+
         laudo.setIncluirMemoriaAprendizagem(
             true
         );
+
 
         laudo.setIncluirFuncoesVisoespaciais(
             true
         );
     }
 
+
+    /*
+     * ============================================================
+     * VALIDAÇÕES
+     * ============================================================
+     */
+
     private void validarRequest(
         LaudoSalvarRequest request
     ) {
-        if (request == null) {
+
+        if (
+            request == null
+        ) {
+
             throw new RuntimeException(
                 "Os dados do laudo são obrigatórios."
             );
         }
 
-        if (request.pacienteId() == null) {
+
+        if (
+            request.pacienteId() == null
+        ) {
+
             throw new RuntimeException(
                 "O paciente é obrigatório."
             );
         }
 
+
         if (
             request.periodoAvaliacaoInicio() != null
-                && request.periodoAvaliacaoFim() != null
-                && request
-                    .periodoAvaliacaoFim()
-                    .isBefore(
-                        request.periodoAvaliacaoInicio()
-                    )
+            &&
+            request.periodoAvaliacaoFim() != null
+            &&
+            request
+                .periodoAvaliacaoFim()
+                .isBefore(
+                    request.periodoAvaliacaoInicio()
+                )
         ) {
+
             throw new RuntimeException(
                 "A data final do período de avaliação não pode ser anterior à data inicial."
             );
         }
 
+
         if (
             request.quantidadeSessoes() != null
-                && request.quantidadeSessoes() <= 0
+            &&
+            request.quantidadeSessoes() <= 0
         ) {
+
             throw new RuntimeException(
                 "A quantidade de sessões deve ser maior que zero."
             );
         }
 
+
         if (
             request.duracaoMinutos() != null
-                && request.duracaoMinutos() <= 0
+            &&
+            request.duracaoMinutos() <= 0
         ) {
+
             throw new RuntimeException(
                 "A duração deve ser maior que zero."
             );
         }
-
-        if (
-            valorBooleano(
-                request.incluirEficienciaIntelectual()
-            )
-                && textoVazio(
-                    request.eficienciaIntelectual()
-                )
-        ) {
-            throw new RuntimeException(
-                "Preencha a eficiência intelectual quando a seção estiver habilitada."
-            );
-        }
     }
+
+
+    /*
+     * ============================================================
+     * RESPONSE
+     * ============================================================
+     */
 
     private LaudoResponse converterParaResponse(
         Laudo laudo
     ) {
-        Paciente paciente = laudo.getPaciente();
+
+        Paciente paciente =
+            laudo.getPaciente();
+
 
         return new LaudoResponse(
+
             laudo.getId(),
 
             paciente != null
@@ -324,11 +614,9 @@ public class LaudoService {
 
             laudo.getIncluirEscalaWasi(),
 
-            laudo
-                .getIncluirFuncoesExecutivasAtencionais(),
+            laudo.getIncluirFuncoesExecutivasAtencionais(),
 
-            laudo
-                .getIncluirMemoriaVisualAuditivoVerbal(),
+            laudo.getIncluirMemoriaVisualAuditivoVerbal(),
 
             laudo.getIncluirMemoriaAprendizagem(),
 
@@ -342,45 +630,88 @@ public class LaudoService {
         );
     }
 
-    private boolean valorBooleano(Boolean valor) {
-        return Boolean.TRUE.equals(valor);
+
+    /*
+     * ============================================================
+     * UTILITÁRIOS
+     * ============================================================
+     */
+
+    private boolean valorBooleano(
+        Boolean valor
+    ) {
+
+        return Boolean.TRUE.equals(
+            valor
+        );
     }
 
-    private boolean textoVazio(String texto) {
-        return texto == null || texto.isBlank();
-    }
 
-    private String limparTexto(String texto) {
-        if (texto == null) {
+    private String limparTexto(
+        String texto
+    ) {
+
+        if (
+            texto == null
+        ) {
+
             return null;
         }
 
-        String textoLimpo = texto
-            .trim()
-            .replaceAll("\\s+", " ");
 
-        if (textoLimpo.isBlank()) {
+        String textoLimpo =
+            texto
+                .trim()
+                .replaceAll(
+                    "\\s+",
+                    " "
+                );
+
+
+        if (
+            textoLimpo.isBlank()
+        ) {
+
             return null;
         }
+
 
         return textoLimpo;
     }
 
+
     private String limparTextoPreservandoQuebras(
         String texto
     ) {
-        if (texto == null) {
+
+        if (
+            texto == null
+        ) {
+
             return null;
         }
 
-        String textoLimpo = texto
-            .replace("\r\n", "\n")
-            .replace('\r', '\n')
-            .trim();
 
-        if (textoLimpo.isBlank()) {
+        String textoLimpo =
+            texto
+                .replace(
+                    "\r\n",
+                    "\n"
+                )
+                .replace(
+                    '\r',
+                    '\n'
+                )
+                .trim();
+
+
+        if (
+            textoLimpo.isBlank()
+        ) {
+
             return null;
         }
+
 
         return textoLimpo;
     }

@@ -38,6 +38,14 @@ public record LaudoSalvarRequest(
 
     String conclusao,
 
+    String cidadeEmissao,
+
+    Integer diaEmissao,
+
+    String mesEmissao,
+
+    Integer anoEmissao,
+
     Boolean incluirEficienciaIntelectual,
 
     Boolean incluirEscalaWasi,

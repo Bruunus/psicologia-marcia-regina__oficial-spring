@@ -114,6 +114,8 @@ public class DocumentoLayoutConfig {
     public int margemInferiorTwips() {
         return 900;
     }
+    
+   
 
     public int margemEsquerdaTwips() {
         return 1440;

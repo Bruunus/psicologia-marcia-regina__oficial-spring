@@ -6,8 +6,6 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
-import java.util.Locale;
 
 import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
@@ -16,6 +14,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTShd;
@@ -28,6 +27,7 @@ import org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STShd;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,26 +44,47 @@ import br.com.psicologia.marcia.service.documento.DocumentoLayoutConfig;
 import br.com.psicologia.marcia.service.documento.Rodape;
 import br.com.psicologia.marcia.service.psicologo.PsicologoService;
 
+
 @Service
 public class DocumentoLaudoService {
 
-    private static final String COR_SUBTITULO = "4472c4";
-    private static final String COR_CABECALHO_TABELA = "8EAADB";
-    private static final String COR_BORDA_TABELA = "000000";
+    private static final String COR_SUBTITULO =
+        "4472c4";
 
-    private static final int TAMANHO_FONTE_PADRAO = 11;
-    private static final int TAMANHO_FONTE_SUBTITULO = 12; 
-    private static final int TAMANHO_FONTE_TABELA = 9;
-    private static final int TAMANHO_FONTE_LEGENDA = 8;
+    private static final String COR_CABECALHO_TABELA =
+        "8EAADB";
 
-    private static final int LARGURA_TOTAL_TABELA = 9300;
+    private static final String COR_BORDA_TABELA =
+        "000000";
+
+    private static final int TAMANHO_FONTE_PADRAO =
+        11;
+
+    private static final int TAMANHO_FONTE_SUBTITULO =
+        13;
+
+    private static final int TAMANHO_FONTE_TABELA =
+        9;
+
+    private static final int TAMANHO_FONTE_LEGENDA =
+        8;
+
+    private static final int LARGURA_TOTAL_TABELA =
+        9300;
+
 
     private final LaudoRepository laudoRepository;
+
     private final PsicologoService psicologoService;
+
     private final ConfiguracaoDocumento configuracaoDocumento;
+
     private final DocumentoLayoutConfig documentoLayoutConfig;
+
     private final Cabecalho cabecalho;
+
     private final Rodape rodape;
+
 
     public DocumentoLaudoService(
         LaudoRepository laudoRepository,
@@ -73,51 +94,88 @@ public class DocumentoLaudoService {
         Cabecalho cabecalho,
         Rodape rodape
     ) {
-        this.laudoRepository = laudoRepository;
-        this.psicologoService = psicologoService;
-        this.configuracaoDocumento = configuracaoDocumento;
-        this.documentoLayoutConfig = documentoLayoutConfig;
-        this.cabecalho = cabecalho;
-        this.rodape = rodape;
+
+        this.laudoRepository =
+            laudoRepository;
+
+        this.psicologoService =
+            psicologoService;
+
+        this.configuracaoDocumento =
+            configuracaoDocumento;
+
+        this.documentoLayoutConfig =
+            documentoLayoutConfig;
+
+        this.cabecalho =
+            cabecalho;
+
+        this.rodape =
+            rodape;
     }
+
 
     @Transactional(readOnly = true)
     public DocumentoLaudoGeradoDTO gerarDocumento(
         LaudoDownloadRequest request
     ) {
-        validarRequest(request);
+
+        validarRequest(
+            request
+        );
+
 
         Laudo laudo =
             laudoRepository
-                .findByIdAndStatusDeleteFalse(request.laudoId())
+                .findByIdAndStatusDeleteFalse(
+                    request.laudoId()
+                )
                 .orElseThrow(
-                    () -> new RuntimeException(
-                        "Laudo psicológico não encontrado."
-                    )
+                    () ->
+                        new RuntimeException(
+                            "Laudo psicológico não encontrado."
+                        )
                 );
 
-        Paciente paciente = laudo.getPaciente();
 
-        if (paciente == null) {
+        Paciente paciente =
+            laudo.getPaciente();
+
+
+        if (
+            paciente == null
+        ) {
+
             throw new RuntimeException(
                 "Paciente não encontrado para o laudo informado."
             );
         }
 
+
         Psicologo psicologo =
-            psicologoService.buscarPsicologoAtivoPrincipal();
+            psicologoService
+                .buscarPsicologoAtivoPrincipal();
+
 
         TipoPapelDocumento tipoPapel =
-            normalizarTipoPapel(request.tipoPapel());
+            normalizarTipoPapel(
+                request.tipoPapel()
+            );
+
 
         try (
-            XWPFDocument documento = new XWPFDocument();
-            ByteArrayOutputStream saida = new ByteArrayOutputStream()
+            XWPFDocument documento =
+                new XWPFDocument();
+
+            ByteArrayOutputStream saida =
+                new ByteArrayOutputStream()
         ) {
+
             configuracaoDocumento.configurar(
                 documento,
                 tipoPapel
             );
+
 
             cabecalho.criar(
                 documento,
@@ -125,30 +183,38 @@ public class DocumentoLaudoService {
                 tipoPapel
             );
 
+
             rodape.criar(
                 documento,
                 psicologo
             );
 
+
             criarCorpoDocumento(
                 documento,
                 paciente,
                 laudo,
-                psicologo,
-                request
+                psicologo
             );
 
-            documento.write(saida);
+
+            documento.write(
+                saida
+            );
+
 
             return new DocumentoLaudoGeradoDTO(
                 saida.toByteArray(),
-                montarNomeArquivo(paciente, laudo),
-                request.incluirEficienciaIntelectual(),
-                request.incluirEscalaWasi(),
-                request.incluirEscalaSrs2()
+                montarNomeArquivo(
+                    paciente,
+                    laudo
+                )
             );
 
-        } catch (IOException e) {
+        } catch (
+            IOException e
+        ) {
+
             throw new RuntimeException(
                 "Erro ao gerar o laudo neuropsicológico.",
                 e
@@ -156,21 +222,30 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void criarCorpoDocumento(
         XWPFDocument documento,
         Paciente paciente,
         Laudo laudo,
-        Psicologo psicologo,
-        LaudoDownloadRequest request
+        Psicologo psicologo
     ) {
-        criarEspaco(documento, 2);
 
-        criarTituloPrincipal(documento);
+        criarEspaco(
+            documento,
+            2
+        );
+
+
+        criarTituloPrincipal(
+            documento
+        );
+
 
         criarSubtitulo(
             documento,
             "Identificação"
         );
+
 
         criarIdentificacao(
             documento,
@@ -178,29 +253,42 @@ public class DocumentoLaudoService {
             laudo
         );
 
-        criarEspaco(documento, 1);
+
+        criarEspaco(
+            documento,
+            1
+        );
+
 
         criarSubtitulo(
             documento,
             "Descrição da demanda"
         );
 
+
         criarParagrafoCorpo(
             documento,
             laudo.getQueixa()
         );
 
-        criarEspaco(documento, 1);
+
+        criarEspaco(
+            documento,
+            1
+        );
+
 
         criarSubtitulo(
             documento,
             "Procedimentos"
         );
 
+
         criarFilhoSubtitulo(
             documento,
             "Informações Preliminares"
         );
+
 
         criarInformacoesPreliminares(
             documento,
@@ -208,156 +296,189 @@ public class DocumentoLaudoService {
             laudo
         );
 
-        criarEspaco(documento, 1);
+
+        criarEspaco(
+            documento,
+            1
+        );
+
 
         criarParagrafoProcedimentos(
             documento,
             laudo
         );
 
+
         criarSubtitulo(
             documento,
             "Testes Psicológicos"
         );
+
 
         criarFilhoSubtitulo(
             documento,
             "Tarefas com estudos preliminares de padronização para a população brasileira e tarefas qualitativas com validação científica"
         );
 
+
         criarParagrafoCorpo(
             documento,
             laudo.getTarefasEstudos()
         );
+
 
         criarFilhoSubtitulo(
             documento,
             "Escalas e questionários"
         );
 
+
         criarParagrafoCorpo(
             documento,
             laudo.getEscalasQuestionarios()
         );
 
-        criarEspaco(documento, 1);
+
+        criarEspaco(
+            documento,
+            1
+        );
+
 
         criarSubtitulo(
             documento,
             "Análise"
         );
 
+
         criarFilhoSubtitulo(
             documento,
             "Dados da Anamnese"
         );
+
 
         criarParagrafoCorpo(
             documento,
             laudo.getDadosAnamnese()
         );
 
+
         criarFilhoSubtitulo(
             documento,
             "Dados Atuais"
         );
+
 
         criarParagrafoCorpo(
             documento,
             laudo.getDadosAtuais()
         );
 
+
         criarFilhoSubtitulo(
             documento,
             "Observações clínicas"
         );
+
 
         criarParagrafoCorpo(
             documento,
             laudo.getObservacoesClinicas()
         );
 
-        /*
-         * OPCIONAL:
-         * Eficiência intelectual
-         */
+
         if (
             Boolean.TRUE.equals(
-                request.incluirEficienciaIntelectual()
+                laudo.getIncluirEficienciaIntelectual()
             )
         ) {
+
             criarSecaoEficienciaIntelectual(
                 documento,
                 laudo
             );
         }
 
-        /*
-         * OPCIONAL:
-         * Escala de Inteligência WASI
-         */
+
         if (
             Boolean.TRUE.equals(
-                request.incluirEscalaWasi()
+                laudo.getIncluirEscalaWasi()
             )
         ) {
+
             criarSecaoEscalaWasi(
                 documento
             );
         }
 
-        /*
-         * SEÇÕES FIXAS
-         */
+
         criarSecaoFuncoesExecutivasAtencionais(
             documento
         );
+
 
         criarSecaoMemoriaVisualAuditivoVerbal(
             documento
         );
 
+
         criarSecaoMemoriaAprendizagem(
             documento
         );
+
 
         criarSecaoFuncoesVisoespaciais(
             documento
         );
 
-        /*
-         * OPCIONAL:
-         * Escala de Responsividade Social - SRS-2
-         */
+
         if (
             Boolean.TRUE.equals(
-                request.incluirEscalaSrs2()
+                laudo.getIncluirEscalaSrs2()
             )
         ) {
+
             criarSecaoSrs2(
                 documento
             );
         }
 
-        criarEspaco(documento, 1);
+
+        criarEspaco(
+            documento,
+            1
+        );
+
 
         criarFilhoSubtitulo(
             documento,
             "Conclusão"
         );
 
+
         criarParagrafoCorpo(
             documento,
             laudo.getConclusao()
         );
 
-        criarEspaco(documento, 1);
 
-        criarDataAtual(
-            documento
+        criarEspaco(
+            documento,
+            1
         );
 
-        criarEspaco(documento, 4);
+
+        criarDataEmissao(
+            documento,
+            laudo
+        );
+
+
+        criarEspaco(
+            documento,
+            4
+        );
+
 
         criarAssinatura(
             documento,
@@ -365,9 +486,11 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarTituloPrincipal(
         XWPFDocument documento
     ) {
+
         XWPFParagraph tituloLinhaUm =
             documento.createParagraph();
 
@@ -375,12 +498,18 @@ public class DocumentoLaudoService {
             ParagraphAlignment.CENTER
         );
 
-        tituloLinhaUm.setSpacingBefore(180);
-        tituloLinhaUm.setSpacingAfter(0);
+        tituloLinhaUm.setSpacingBefore(
+            180
+        );
+
+        tituloLinhaUm.setSpacingAfter(
+            0
+        );
 
         manterComProximo(
             tituloLinhaUm
         );
+
 
         XWPFRun runLinhaUm =
             tituloLinhaUm.createRun();
@@ -389,12 +518,18 @@ public class DocumentoLaudoService {
             runLinhaUm
         );
 
-        runLinhaUm.setBold(true);
-        runLinhaUm.setFontSize(14);
+        runLinhaUm.setBold(
+            true
+        );
+
+        runLinhaUm.setFontSize(
+            14
+        );
 
         runLinhaUm.setText(
             "Laudo Psicológico"
         );
+
 
         XWPFParagraph tituloLinhaDois =
             documento.createParagraph();
@@ -403,12 +538,18 @@ public class DocumentoLaudoService {
             ParagraphAlignment.CENTER
         );
 
-        tituloLinhaDois.setSpacingBefore(0);
-        tituloLinhaDois.setSpacingAfter(1300);
+        tituloLinhaDois.setSpacingBefore(
+            0
+        );
+
+        tituloLinhaDois.setSpacingAfter(
+            1300
+        );
 
         manterComProximo(
             tituloLinhaDois
         );
+
 
         XWPFRun runLinhaDois =
             tituloLinhaDois.createRun();
@@ -417,19 +558,26 @@ public class DocumentoLaudoService {
             runLinhaDois
         );
 
-        runLinhaDois.setBold(true);
-        runLinhaDois.setFontSize(11);
+        runLinhaDois.setBold(
+            true
+        );
+
+        runLinhaDois.setFontSize(
+            11
+        );
 
         runLinhaDois.setText(
             "Com enfoque neuropsicológico"
         );
     }
 
+
     private void criarIdentificacao(
         XWPFDocument documento,
         Paciente paciente,
         Laudo laudo
     ) {
+
         criarLinhaIdentificacao(
             documento,
             "Nome: ",
@@ -486,11 +634,13 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarLinhaIdentificacao(
         XWPFDocument documento,
         String rotulo,
         String conteudo
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
 
@@ -498,8 +648,14 @@ public class DocumentoLaudoService {
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(0);
-        paragrafo.setSpacingAfter(70);
+        paragrafo.setSpacingBefore(
+            0
+        );
+
+        paragrafo.setSpacingAfter(
+            70
+        );
+
 
         XWPFRun runRotulo =
             paragrafo.createRun();
@@ -508,8 +664,14 @@ public class DocumentoLaudoService {
             runRotulo
         );
 
-        runRotulo.setBold(true);
-        runRotulo.setText(rotulo);
+        runRotulo.setBold(
+            true
+        );
+
+        runRotulo.setText(
+            rotulo
+        );
+
 
         XWPFRun runConteudo =
             paragrafo.createRun();
@@ -519,21 +681,27 @@ public class DocumentoLaudoService {
         );
 
         runConteudo.setText(
-            valor(conteudo)
+            valor(
+                conteudo
+            )
         );
     }
+
 
     private void criarInformacoesPreliminares(
         XWPFDocument documento,
         Paciente paciente,
         Laudo laudo
     ) {
+
         StringBuilder texto =
             new StringBuilder();
 
+
         texto.append(
-            "Este relatório foi elaborado a partir das circunstâncias do momento atual para fins clínicos e os resultados aqui descritos são influenciados por variáveis fisiológicas, ambientais e culturais. Todas as informações de anamnese foram obtidas por "
+            "Este relatório foi elaborado a partir das circunstâncias do momento atual para fins clínicos e os resultados aqui descritos são influenciados por variáveis fisiológicas,ambientais e culturais. Todas as informações de anamnese foram obtidas por "
         );
+
 
         texto.append(
             valor(
@@ -541,18 +709,24 @@ public class DocumentoLaudoService {
             )
         );
 
+
         if (
             pacienteMenorDeIdade(
                 paciente,
                 laudo
             )
         ) {
+
             String responsavel =
                 valor(
                     paciente.getResponsavel()
                 );
 
-            if (!responsavel.isBlank()) {
+
+            if (
+                !responsavel.isBlank()
+            ) {
+
                 texto.append(
                     " e responsável "
                 );
@@ -563,7 +737,11 @@ public class DocumentoLaudoService {
             }
         }
 
-        texto.append(".");
+
+        texto.append(
+            "."
+        );
+
 
         criarParagrafoCorpo(
             documento,
@@ -571,24 +749,29 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoEficienciaIntelectual(
         XWPFDocument documento,
         Laudo laudo
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Eficiência intelectual"
         );
+
 
         criarParagrafoCorpo(
             documento,
             laudo.getEficienciaIntelectual()
         );
 
+
         criarParagrafoCorpo(
             documento,
-            "A integração de várias funções para resolução de problemas, mediadas pelo pensamento, linguagem, conceituação e abstração fazem parte da inteligência global. As escalas Wechsler podem ser entendidas como instrumentos que avaliam a inteligência global, bem como dois tipos de inteligência: a cristalizada, relacionada aos subtestes Vocabulário e Compreensão, e a fluida, relacionada aos subtestes Cubos e Raciocínio Matricial. Importante ressaltar que o conceito de QI possui importância diagnóstica, uma vez que se acentuam os diversos componentes da cognição."
+            "A integração de várias funções para resolução de problemas,mediadas pelo pensamento,linguagem,conceituação e abstração fazem parte da inteligência global. As escalas Wechsler podem ser entendidas como instrumentos que avaliam a inteligência global,bem como dois tipos de inteligência:a cristalizada,relacionada aos subtestes Vocabulário e Compreensão,e a fluida,relacionada aos subtestes Cubos e Raciocínio Matricial. Importante ressaltar que o conceito de QI possui importância diagnóstica,uma vez que se acentuam os diversos componentes da cognição."
         );
+
 
         criarEspaco(
             documento,
@@ -596,19 +779,24 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoEscalaWasi(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Escala de Inteligência WASI"
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 5,
                 4
             );
+
 
         configurarTabela(
             tabela,
@@ -620,6 +808,7 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoTabela(
             tabela.getRow(0),
             new String[]{
@@ -630,16 +819,19 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarLinhasVazias(
             tabela,
             1,
             4
         );
 
+
         criarLegenda(
             documento,
-            "Valores de QI: Muito abaixo da média (≤79); Médio inferior (80-89); Médio (90-109); Médio superior (110-119); Superior (120-129); Muito superior (≥130)."
+            "Valores de QI:Muito abaixo da média(≤79);Médio inferior(80-89);Médio(90-109);Médio superior(110-119);Superior(120-129);Muito superior(≥130)."
         );
+
 
         criarEspaco(
             documento,
@@ -647,24 +839,30 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoFuncoesExecutivasAtencionais(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Funções Executivas e Atencionais"
         );
 
+
         criarParagrafoCorpo(
             documento,
-            "Funções executivas envolvem habilidades cognitivas e princípios de organizações necessárias para lidar com planejamento e execução de atividades, incluindo iniciação em tarefas, memória operacional, alternância, flexibilidade e controle inibitório. A atenção é o processo mediante o qual se diferenciam aqueles estímulos que serão utilizados para alcançar ou atingir determinados objetivos ou metas, enquanto são ignorados aqueles que podem ocasionar algum tipo de interferência. Os estímulos relevantes são os considerados alvo e os que produzem interferência são os chamados distratores."
+            "Funções executivas envolvem habilidades cognitivas e princípios de organizações necessárias para lidar com planejamento e execução de atividades,incluindo iniciação em tarefas,memória operacional,alternância,flexibilidade e controle inibitório. A atenção é o processo mediante o qual se diferenciam aqueles estímulos que serão utilizados para alcançar ou atingir determinados objetivos ou metas,enquanto são ignorados aqueles que podem ocasionar algum tipo de interferência. Os estímulos relevantes são os considerados alvo e os que produzem interferência são os chamados distratores."
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 5,
                 2
             );
+
 
         configurarTabela(
             tabela,
@@ -674,6 +872,7 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoTabela(
             tabela.getRow(0),
             new String[]{
@@ -682,18 +881,23 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarLinhasVazias(
             tabela,
             1,
             4
         );
 
+
         criarLegendaComQuebras(
             documento,
-            "WECHSLER, David et al. Escala Wechsler abreviada de inteligência – WASI. 1ª. Edição. São Paulo: Casa do Psicólogo, 2014.\n"
-                + "REY, André; et al. Figuras complexas de Rey: teste de cópia e de reprodução de memória de figuras geométricas complexas. São Paulo: Casa do Psicólogo, 2014.\n\n"
-                + "SEDÓ, M.; PAULA, J. Malloy-Diniz. Teste dos Cinco Dígitos. Versão Brasileira. Tradução Oto Mendonça, 2015."
+            "WECHSLER,David et al. Escala Wechsler abreviada de inteligência – WASI. 1ª. Edição. São Paulo:Casa do Psicólogo,2014.\n"
+                +
+            "REY,André;et al. Figuras complexas de Rey:teste de cópia e de reprodução de memória de figuras geométricas complexas. São Paulo:Casa do Psicólogo,2014.\n\n"
+                +
+            "SEDÓ,M.;PAULA,J. Malloy-Diniz. Teste dos Cinco Dígitos. Versão Brasileira. Tradução Oto Mendonça,2015."
         );
+
 
         criarEspaco(
             documento,
@@ -701,24 +905,30 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoMemoriaVisualAuditivoVerbal(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Memória visual e/ou auditivo-verbal"
         );
 
+
         criarParagrafoCorpo(
             documento,
-            "Memória é a habilidade de adquirir, reter e evocar informações. É composta por subsistemas e subdividida em diferentes tipos."
+            "Memória é a habilidade de adquirir,reter e evocar informações. É composta por subsistemas e subdividida em diferentes tipos."
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 5,
                 2
             );
+
 
         configurarTabela(
             tabela,
@@ -728,6 +938,7 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoTabela(
             tabela.getRow(0),
             new String[]{
@@ -736,11 +947,13 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarLinhasVazias(
             tabela,
             1,
             4
         );
+
 
         criarEspaco(
             documento,
@@ -748,19 +961,24 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoMemoriaAprendizagem(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Memória e aprendizagem"
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 11,
                 5
             );
+
 
         configurarTabela(
             tabela,
@@ -773,9 +991,11 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoMemoriaAprendizagem(
             tabela.getRow(0)
         );
+
 
         definirTextoCelula(
             tabela.getRow(1).getCell(0),
@@ -785,6 +1005,7 @@ public class DocumentoLaudoService {
             TAMANHO_FONTE_TABELA
         );
 
+
         mesclarVerticalmente(
             tabela,
             0,
@@ -792,17 +1013,22 @@ public class DocumentoLaudoService {
             5
         );
 
+
         for (
             int linha = 1;
             linha <= 5;
             linha++
         ) {
+
             configurarCelulasResultadoVazias(
-                tabela.getRow(linha),
+                tabela.getRow(
+                    linha
+                ),
                 1,
                 4
             );
         }
+
 
         configurarLinhaRotuladaMemoria(
             tabela.getRow(6),
@@ -829,30 +1055,37 @@ public class DocumentoLaudoService {
             "Índice de aprendizagem"
         );
 
+
         criarEspaco(
             documento,
             1
         );
     }
 
+
     private void criarSecaoFuncoesVisoespaciais(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Funções viso-espaciais/praxias viso-construtivas"
         );
+
 
         criarParagrafoCorpo(
             documento,
             "Habilidades que são mediadas por funções visuais e que permitem executar ações voltadas a um fim num plano concreto por meio da atividade motora."
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 5,
                 2
             );
+
 
         configurarTabela(
             tabela,
@@ -862,6 +1095,7 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoTabela(
             tabela.getRow(0),
             new String[]{
@@ -870,11 +1104,13 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarLinhasVazias(
             tabela,
             1,
             4
         );
+
 
         criarEspaco(
             documento,
@@ -882,24 +1118,30 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSecaoSrs2(
         XWPFDocument documento
     ) {
+
         criarFilhoSubtitulo(
             documento,
             "Escala de Responsividade Social – SRS-2"
         );
 
+
         criarParagrafoCorpo(
             documento,
-            "A Escala de Responsividade Social, Segunda Edição (SRS-2) tem como objetivo mensurar sintomas associados ao Transtorno do Espectro Autista (TEA), bem como classificá-los em níveis leves, moderados ou severos. Sua avaliação se faz de forma global e específica, já que agrupa os sintomas em subcategorias, incluindo Escalas Compatíveis ao DSM-5 e Subescalas de Intervenção. Por esse motivo, pode ser utilizada para iniciar processos diagnósticos, como rastreio, e para o planejamento de intervenções clínicas e ocupacionais."
+            "A Escala de Responsividade Social,Segunda Edição(SRS-2)tem como objetivo mensurar sintomas associados ao Transtorno do Espectro Autista(TEA),bem como classificá-los em níveis leves,moderados ou severos. Sua avaliação se faz de forma global e específica,já que agrupa os sintomas em subcategorias,incluindo Escalas Compatíveis ao DSM-5 e Subescalas de Intervenção. Por esse motivo,pode ser utilizada para iniciar processos diagnósticos,como rastreio,e para o planejamento de intervenções clínicas e ocupacionais."
         );
 
+
         XWPFTable tabela =
-            documento.createTable(
+            criarTabela(
+                documento,
                 5,
                 3
             );
+
 
         configurarTabela(
             tabela,
@@ -910,6 +1152,7 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarCabecalhoTabela(
             tabela.getRow(0),
             new String[]{
@@ -919,11 +1162,13 @@ public class DocumentoLaudoService {
             }
         );
 
+
         configurarLinhasVazias(
             tabela,
             1,
             4
         );
+
 
         criarEspaco(
             documento,
@@ -931,10 +1176,31 @@ public class DocumentoLaudoService {
         );
     }
 
+
+    private XWPFTable criarTabela(
+        XWPFDocument documento,
+        int linhas,
+        int colunas
+    ) {
+
+        criarEspaco(
+            documento,
+            1
+        );
+
+
+        return documento.createTable(
+            linhas,
+            colunas
+        );
+    }
+
+
     private void configurarTabela(
         XWPFTable tabela,
         int[] larguras
     ) {
+
         tabela.setCellMargins(
             50,
             70,
@@ -942,27 +1208,41 @@ public class DocumentoLaudoService {
             70
         );
 
-        CTTblPr tblPr =
-            tabela.getCTTbl().getTblPr();
 
-        if (tblPr == null) {
+        CTTblPr tblPr =
+            tabela
+                .getCTTbl()
+                .getTblPr();
+
+
+        if (
+            tblPr == null
+        ) {
+
             tblPr =
                 tabela
                     .getCTTbl()
                     .addNewTblPr();
         }
 
+
         CTTblWidth larguraTabela =
             tblPr.getTblW();
 
-        if (larguraTabela == null) {
+
+        if (
+            larguraTabela == null
+        ) {
+
             larguraTabela =
                 tblPr.addNewTblW();
         }
 
+
         larguraTabela.setType(
             STTblWidth.DXA
         );
+
 
         larguraTabela.setW(
             BigInteger.valueOf(
@@ -970,21 +1250,28 @@ public class DocumentoLaudoService {
             )
         );
 
+
         configurarBordasTabela(
             tabela
         );
+
 
         for (
             XWPFTableRow linha :
             tabela.getRows()
         ) {
-            linha.setHeight(500);
+
+            linha.setHeight(
+                500
+            );
+
 
             for (
                 int coluna = 0;
                 coluna < linha.getTableCells().size();
                 coluna++
             ) {
+
                 int largura =
                     coluna < larguras.length
                         ? larguras[coluna]
@@ -992,13 +1279,19 @@ public class DocumentoLaudoService {
                             larguras.length - 1
                         ];
 
+
                 definirLarguraCelula(
-                    linha.getCell(coluna),
+                    linha.getCell(
+                        coluna
+                    ),
                     largura
                 );
 
+
                 linha
-                    .getCell(coluna)
+                    .getCell(
+                        coluna
+                    )
                     .setVerticalAlignment(
                         XWPFTableCell
                             .XWPFVertAlign
@@ -1008,24 +1301,34 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void configurarCabecalhoTabela(
         XWPFTableRow linha,
         String[] textos
     ) {
-        linha.setHeight(600);
+
+        linha.setHeight(
+            600
+        );
+
 
         for (
             int coluna = 0;
             coluna < textos.length;
             coluna++
         ) {
+
             XWPFTableCell celula =
-                linha.getCell(coluna);
+                linha.getCell(
+                    coluna
+                );
+
 
             aplicarCorFundoCelula(
                 celula,
                 COR_CABECALHO_TABELA
             );
+
 
             definirTextoCelula(
                 celula,
@@ -1037,9 +1340,11 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void configurarCabecalhoMemoriaAprendizagem(
         XWPFTableRow linha
     ) {
+
         definirTextoCelula(
             linha.getCell(0),
             "",
@@ -1048,6 +1353,7 @@ public class DocumentoLaudoService {
             TAMANHO_FONTE_TABELA
         );
 
+
         String[] textos = {
             "categorias",
             "pontuação",
@@ -1055,22 +1361,30 @@ public class DocumentoLaudoService {
             "classificação"
         };
 
+
         for (
             int coluna = 1;
             coluna <= 4;
             coluna++
         ) {
+
             XWPFTableCell celula =
-                linha.getCell(coluna);
+                linha.getCell(
+                    coluna
+                );
+
 
             aplicarCorFundoCelula(
                 celula,
                 COR_CABECALHO_TABELA
             );
 
+
             definirTextoCelula(
                 celula,
-                textos[coluna - 1],
+                textos[
+                    coluna - 1
+                ],
                 true,
                 ParagraphAlignment.CENTER,
                 TAMANHO_FONTE_TABELA
@@ -1078,11 +1392,16 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void configurarLinhaRotuladaMemoria(
         XWPFTableRow linha,
         String rotulo
     ) {
-        linha.setHeight(500);
+
+        linha.setHeight(
+            500
+        );
+
 
         definirTextoCelula(
             linha.getCell(0),
@@ -1092,6 +1411,7 @@ public class DocumentoLaudoService {
             TAMANHO_FONTE_TABELA
         );
 
+
         configurarCelulasResultadoVazias(
             linha,
             1,
@@ -1099,18 +1419,23 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void configurarCelulasResultadoVazias(
         XWPFTableRow linha,
         int colunaInicial,
         int colunaFinal
     ) {
+
         for (
             int coluna = colunaInicial;
             coluna <= colunaFinal;
             coluna++
         ) {
+
             definirTextoCelula(
-                linha.getCell(coluna),
+                linha.getCell(
+                    coluna
+                ),
                 "",
                 false,
                 ParagraphAlignment.LEFT,
@@ -1119,28 +1444,41 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void configurarLinhasVazias(
         XWPFTable tabela,
         int linhaInicial,
         int quantidade
     ) {
+
         int linhaFinal =
-            linhaInicial + quantidade;
+            linhaInicial
+                +
+            quantidade;
+
 
         for (
             int linha = linhaInicial;
             linha < linhaFinal;
             linha++
         ) {
-            XWPFTableRow row =
-                tabela.getRow(linha);
 
-            row.setHeight(500);
+            XWPFTableRow row =
+                tabela.getRow(
+                    linha
+                );
+
+
+            row.setHeight(
+                500
+            );
+
 
             for (
                 XWPFTableCell celula :
                 row.getTableCells()
             ) {
+
                 definirTextoCelula(
                     celula,
                     "",
@@ -1152,6 +1490,7 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void definirTextoCelula(
         XWPFTableCell celula,
         String texto,
@@ -1159,22 +1498,32 @@ public class DocumentoLaudoService {
         ParagraphAlignment alinhamento,
         int tamanhoFonte
     ) {
+
         limparParagrafosCelula(
             celula
         );
 
+
         XWPFParagraph paragrafo =
             celula.addParagraph();
+
 
         paragrafo.setAlignment(
             alinhamento
         );
 
-        paragrafo.setSpacingBefore(0);
-        paragrafo.setSpacingAfter(0);
+        paragrafo.setSpacingBefore(
+            0
+        );
+
+        paragrafo.setSpacingAfter(
+            0
+        );
+
 
         XWPFRun run =
             paragrafo.createRun();
+
 
         run.setFontFamily(
             documentoLayoutConfig
@@ -1190,62 +1539,91 @@ public class DocumentoLaudoService {
         );
 
         run.setText(
-            valor(texto)
+            valor(
+                texto
+            )
         );
     }
+
 
     private void limparParagrafosCelula(
         XWPFTableCell celula
     ) {
+
         while (
-            celula.getParagraphs().size() > 0
+            celula
+                .getParagraphs()
+                .size()
+                >
+            0
         ) {
-            celula.removeParagraph(0);
+
+            celula.removeParagraph(
+                0
+            );
         }
     }
+
 
     private void aplicarCorFundoCelula(
         XWPFTableCell celula,
         String cor
     ) {
+
         CTTcPr tcPr =
             obterPropriedadesCelula(
                 celula
             );
+
 
         CTShd shd =
             tcPr.isSetShd()
                 ? tcPr.getShd()
                 : tcPr.addNewShd();
 
+
         shd.setVal(
             STShd.CLEAR
         );
 
-        shd.setColor("auto");
-        shd.setFill(cor);
+        shd.setColor(
+            "auto"
+        );
+
+        shd.setFill(
+            cor
+        );
     }
+
 
     private void definirLarguraCelula(
         XWPFTableCell celula,
         int larguraTwips
     ) {
+
         CTTcPr tcPr =
             obterPropriedadesCelula(
                 celula
             );
 
+
         CTTblWidth largura =
             tcPr.getTcW();
 
-        if (largura == null) {
+
+        if (
+            largura == null
+        ) {
+
             largura =
                 tcPr.addNewTcW();
         }
 
+
         largura.setType(
             STTblWidth.DXA
         );
+
 
         largura.setW(
             BigInteger.valueOf(
@@ -1254,23 +1632,31 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private CTTcPr obterPropriedadesCelula(
         XWPFTableCell celula
     ) {
+
         CTTcPr tcPr =
             celula
                 .getCTTc()
                 .getTcPr();
 
-        if (tcPr == null) {
+
+        if (
+            tcPr == null
+        ) {
+
             tcPr =
                 celula
                     .getCTTc()
                     .addNewTcPr();
         }
 
+
         return tcPr;
     }
+
 
     private void mesclarVerticalmente(
         XWPFTable tabela,
@@ -1278,31 +1664,45 @@ public class DocumentoLaudoService {
         int linhaInicial,
         int linhaFinal
     ) {
+
         for (
             int linha = linhaInicial;
             linha <= linhaFinal;
             linha++
         ) {
+
             XWPFTableCell celula =
                 tabela
-                    .getRow(linha)
-                    .getCell(coluna);
+                    .getRow(
+                        linha
+                    )
+                    .getCell(
+                        coluna
+                    );
+
 
             CTTcPr tcPr =
                 obterPropriedadesCelula(
                     celula
                 );
 
+
             CTVMerge merge =
                 tcPr.isSetVMerge()
                     ? tcPr.getVMerge()
                     : tcPr.addNewVMerge();
 
-            if (linha == linhaInicial) {
+
+            if (
+                linha == linhaInicial
+            ) {
+
                 merge.setVal(
                     STMerge.RESTART
                 );
+
             } else {
+
                 merge.setVal(
                     STMerge.CONTINUE
                 );
@@ -1310,28 +1710,40 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void configurarBordasTabela(
         XWPFTable tabela
     ) {
+
         CTTblPr tblPr =
             tabela
                 .getCTTbl()
                 .getTblPr();
 
-        if (tblPr == null) {
+
+        if (
+            tblPr == null
+        ) {
+
             tblPr =
                 tabela
                     .getCTTbl()
                     .addNewTblPr();
         }
 
+
         CTTblBorders bordas =
             tblPr.getTblBorders();
 
-        if (bordas == null) {
+
+        if (
+            bordas == null
+        ) {
+
             bordas =
                 tblPr.addNewTblBorders();
         }
+
 
         configurarBorda(
             bordas.isSetTop()
@@ -1370,15 +1782,19 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void configurarBorda(
         CTBorder borda
     ) {
+
         borda.setVal(
             STBorder.SINGLE
         );
 
         borda.setSz(
-            BigInteger.valueOf(6)
+            BigInteger.valueOf(
+                6
+            )
         );
 
         borda.setSpace(
@@ -1390,26 +1806,37 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void criarSubtitulo(
         XWPFDocument documento,
         String texto
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(200);
-        paragrafo.setSpacingAfter(400);
+        paragrafo.setSpacingBefore(
+            200
+        );
+
+        paragrafo.setSpacingAfter(
+            400
+        );
+
 
         manterComProximo(
             paragrafo
         );
 
+
         XWPFRun run =
             paragrafo.createRun();
+
 
         run.setFontFamily(
             "Arial"
@@ -1419,104 +1846,155 @@ public class DocumentoLaudoService {
             TAMANHO_FONTE_SUBTITULO
         );
 
-        run.setBold(true);
+        run.setBold(
+            true
+        );
 
         run.setColor(
             COR_SUBTITULO
         );
 
         run.setText(
-            valor(texto)
+            valor(
+                texto
+            )
         );
     }
+
 
     private void criarFilhoSubtitulo(
         XWPFDocument documento,
         String texto
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(140);
-        paragrafo.setSpacingAfter(80);
+        paragrafo.setSpacingBefore(
+            600
+        );
+
+        paragrafo.setSpacingAfter(
+            320
+        );
+
 
         manterComProximo(
             paragrafo
         );
 
+
         XWPFRun run =
             paragrafo.createRun();
+
 
         aplicarFontePadrao(
             run
         );
 
-        run.setBold(true);
+
+        run.setBold(
+            true
+        );
+
 
         run.setText(
-            valor(texto)
+            valor(
+                texto
+            )
         );
     }
+
 
     private void criarParagrafoCorpo(
         XWPFDocument documento,
         String texto
     ) {
+
         if (
-            texto == null ||
+            texto == null
+            ||
             texto.isBlank()
         ) {
+
             return;
         }
+
 
         XWPFParagraph paragrafo =
             documento.createParagraph();
 
+
         paragrafo.setAlignment(
             ParagraphAlignment.BOTH
         );
+
 
         paragrafo.setIndentationFirstLine(
             documentoLayoutConfig
                 .recuoPrimeiraLinhaCorpoTwips()
         );
 
-        paragrafo.setSpacingBefore(80);
-        paragrafo.setSpacingAfter(160);
+
+        paragrafo.setSpacingBetween(
+            1.15
+        );
+
+        paragrafo.setSpacingBefore(
+            80
+        );
+
+        paragrafo.setSpacingAfter(
+            160
+        );
+
 
         XWPFRun run =
             paragrafo.createRun();
 
+
         aplicarFontePadrao(
             run
         );
+
 
         adicionarTextoComQuebras(
             run,
             texto
         );
     }
+
 
     private void criarLegenda(
         XWPFDocument documento,
         String texto
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(40);
-        paragrafo.setSpacingAfter(80);
+        paragrafo.setSpacingBefore(
+            40
+        );
+
+        paragrafo.setSpacingAfter(
+            80
+        );
+
 
         XWPFRun run =
             paragrafo.createRun();
+
 
         run.setFontFamily(
             documentoLayoutConfig
@@ -1528,26 +2006,38 @@ public class DocumentoLaudoService {
         );
 
         run.setText(
-            valor(texto)
+            valor(
+                texto
+            )
         );
     }
+
 
     private void criarLegendaComQuebras(
         XWPFDocument documento,
         String texto
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(80);
-        paragrafo.setSpacingAfter(80);
+        paragrafo.setSpacingBefore(
+            80
+        );
+
+        paragrafo.setSpacingAfter(
+            80
+        );
+
 
         XWPFRun run =
             paragrafo.createRun();
+
 
         run.setFontFamily(
             documentoLayoutConfig
@@ -1557,6 +2047,7 @@ public class DocumentoLaudoService {
         run.setFontSize(
             TAMANHO_FONTE_LEGENDA
         );
+
 
         adicionarTextoComQuebras(
             run,
@@ -1564,95 +2055,254 @@ public class DocumentoLaudoService {
         );
     }
 
-    private void criarDataAtual(
-        XWPFDocument documento
+
+    /*
+     * ============================================================
+     * DATA DE EMISSÃO
+     * ============================================================
+     *
+     * Não usa mais LocalDate.now().
+     * Os valores são recuperados do registro salvo no banco.
+     * ============================================================
+     */
+
+    private void criarDataEmissao(
+        XWPFDocument documento,
+        Laudo laudo
     ) {
-        LocalDate dataAtual =
-            LocalDate.now();
-
-        Locale locale =
-            Locale.forLanguageTag(
-                "pt-BR"
-            );
-
-        String mes =
-            dataAtual
-                .getMonth()
-                .getDisplayName(
-                    TextStyle.FULL,
-                    locale
-                );
 
         String texto =
-            "São Paulo, "
-                + dataAtual.getDayOfMonth()
-                + " de "
-                + mes
-                + " de "
-                + dataAtual.getYear()
-                + ".";
+            montarTextoDataEmissao(
+                laudo
+            );
+
+
+        if (
+            texto.isBlank()
+        ) {
+
+            return;
+        }
+
 
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.LEFT
         );
 
-        paragrafo.setSpacingBefore(200);
-        paragrafo.setSpacingAfter(200);
+        paragrafo.setSpacingBefore(
+            200
+        );
+
+        paragrafo.setSpacingAfter(
+            200
+        );
+
 
         XWPFRun run =
             paragrafo.createRun();
 
+
         aplicarFontePadrao(
             run
         );
+
 
         run.setText(
             texto
         );
     }
 
+
+    private String montarTextoDataEmissao(
+        Laudo laudo
+    ) {
+
+        String cidade =
+            valor(
+                laudo.getCidadeEmissao()
+            ).trim();
+
+
+        Integer dia =
+            laudo.getDiaEmissao();
+
+
+        String mes =
+            valor(
+                laudo.getMesEmissao()
+            ).trim();
+
+
+        Integer ano =
+            laudo.getAnoEmissao();
+
+
+        if (
+            cidade.isBlank()
+            &&
+            dia == null
+            &&
+            mes.isBlank()
+            &&
+            ano == null
+        ) {
+
+            return "";
+        }
+
+
+        StringBuilder texto =
+            new StringBuilder();
+
+
+        if (
+            !cidade.isBlank()
+        ) {
+
+            texto.append(
+                cidade
+            );
+        }
+
+
+        if (
+            dia != null
+        ) {
+
+            if (
+                texto.length() > 0
+            ) {
+
+                texto.append(
+                    ", "
+                );
+            }
+
+
+            texto.append(
+                dia
+            );
+        }
+
+
+        if (
+            !mes.isBlank()
+        ) {
+
+            if (
+                dia != null
+            ) {
+
+                texto.append(
+                    " de "
+                );
+
+            } else if (
+                texto.length() > 0
+            ) {
+
+                texto.append(
+                    ", "
+                );
+            }
+
+
+            texto.append(
+                mes
+            );
+        }
+
+
+        if (
+            ano != null
+        ) {
+
+            if (
+                !mes.isBlank()
+            ) {
+
+                texto.append(
+                    " de "
+                );
+
+            } else if (
+                texto.length() > 0
+            ) {
+
+                texto.append(
+                    ", "
+                );
+            }
+
+
+            texto.append(
+                ano
+            );
+        }
+
+
+        texto.append(
+            "."
+        );
+
+
+        return texto.toString();
+    }
+
+
     private void criarAssinatura(
         XWPFDocument documento,
         Psicologo psicologo
     ) {
+
         XWPFParagraph linha =
             criarParagrafoAssinatura(
                 documento
             );
 
+
         manterComProximo(
             linha
         );
 
+
         XWPFRun linhaRun =
             linha.createRun();
+
 
         aplicarFontePadrao(
             linhaRun
         );
 
+
         linhaRun.setText(
             "_____________________________"
         );
+
 
         XWPFParagraph nome =
             criarParagrafoAssinatura(
                 documento
             );
 
+
         manterComProximo(
             nome
         );
 
+
         XWPFRun nomeRun =
             nome.createRun();
+
 
         aplicarFontePadrao(
             nomeRun
         );
+
 
         nomeRun.setText(
             valor(
@@ -1660,71 +2310,101 @@ public class DocumentoLaudoService {
             )
         );
 
+
         XWPFParagraph funcao =
             criarParagrafoAssinatura(
                 documento
             );
 
+
         XWPFRun funcaoRun =
             funcao.createRun();
+
 
         aplicarFontePadrao(
             funcaoRun
         );
 
+
         funcaoRun.setText(
             "Psicóloga CRP: "
-                + valor(
-                    psicologo.getCrp()
-                )
+                +
+            valor(
+                psicologo.getCrp()
+            )
         );
     }
+
 
     private XWPFParagraph criarParagrafoAssinatura(
         XWPFDocument documento
     ) {
+
         XWPFParagraph paragrafo =
             documento.createParagraph();
+
 
         paragrafo.setAlignment(
             ParagraphAlignment.CENTER
         );
 
-        paragrafo.setSpacingBefore(0);
-        paragrafo.setSpacingAfter(50);
+        paragrafo.setSpacingBefore(
+            0
+        );
+
+        paragrafo.setSpacingAfter(
+            50
+        );
+
 
         return paragrafo;
     }
 
+
     private void aplicarFontePadrao(
         XWPFRun run
     ) {
+
         run.setFontFamily(
             documentoLayoutConfig
                 .fonteTexto()
         );
+
 
         run.setFontSize(
             TAMANHO_FONTE_PADRAO
         );
     }
 
+
     private void adicionarTextoComQuebras(
         XWPFRun run,
         String texto
     ) {
+
         String[] linhas =
-            valor(texto)
-                .split("\\R", -1);
+            valor(
+                texto
+            )
+            .split(
+                "\\R",
+                -1
+            );
+
 
         for (
             int indice = 0;
             indice < linhas.length;
             indice++
         ) {
-            if (indice > 0) {
+
+            if (
+                indice > 0
+            ) {
+
                 run.addBreak();
             }
+
 
             run.setText(
                 linhas[indice]
@@ -1732,125 +2412,163 @@ public class DocumentoLaudoService {
         }
     }
 
+
     private void criarEspaco(
         XWPFDocument documento,
         int quantidade
     ) {
+
         for (
             int indice = 0;
             indice < quantidade;
             indice++
         ) {
+
             XWPFParagraph paragrafo =
                 documento.createParagraph();
 
-            paragrafo.setSpacingBefore(0);
-            paragrafo.setSpacingAfter(0);
+
+            paragrafo.setSpacingBefore(
+                0
+            );
+
+            paragrafo.setSpacingAfter(
+                0
+            );
+
 
             XWPFRun run =
                 paragrafo.createRun();
+
 
             run.addBreak();
         }
     }
 
+
     private void manterComProximo(
         XWPFParagraph paragrafo
     ) {
+
         CTPPr pPr =
             paragrafo
                 .getCTP()
                 .isSetPPr()
-                ? paragrafo
-                    .getCTP()
-                    .getPPr()
-                : paragrafo
-                    .getCTP()
-                    .addNewPPr();
+                    ? paragrafo
+                        .getCTP()
+                        .getPPr()
+                    : paragrafo
+                        .getCTP()
+                        .addNewPPr();
 
-        if (!pPr.isSetKeepNext()) {
+
+        if (
+            !pPr.isSetKeepNext()
+        ) {
+
             pPr.addNewKeepNext();
         }
     }
+
 
     private boolean pacienteMenorDeIdade(
         Paciente paciente,
         Laudo laudo
     ) {
+
         if (
-            paciente.getDataNascimento()
-                == null
+            paciente.getDataNascimento() == null
         ) {
+
             return false;
         }
 
+
         LocalDate dataReferencia =
-            laudo.getPeriodoAvaliacaoInicio()
-                != null
-                ? laudo
-                    .getPeriodoAvaliacaoInicio()
+            laudo.getPeriodoAvaliacaoInicio() != null
+                ? laudo.getPeriodoAvaliacaoInicio()
                 : LocalDate.now();
 
+
         int idade =
-            Period.between(
-                paciente.getDataNascimento(),
-                dataReferencia
-            ).getYears();
+            Period
+                .between(
+                    paciente.getDataNascimento(),
+                    dataReferencia
+                )
+                .getYears();
+
 
         return idade < 18;
     }
+
 
     private String formatarIdadeNaAvaliacao(
         Paciente paciente,
         Laudo laudo
     ) {
+
         if (
-            paciente.getDataNascimento()
-                == null
+            paciente.getDataNascimento() == null
         ) {
+
             return "";
         }
 
+
         LocalDate dataReferencia =
-            laudo.getPeriodoAvaliacaoInicio()
-                != null
-                ? laudo
-                    .getPeriodoAvaliacaoInicio()
+            laudo.getPeriodoAvaliacaoInicio() != null
+                ? laudo.getPeriodoAvaliacaoInicio()
                 : LocalDate.now();
 
-        int idade =
-            Period.between(
-                paciente.getDataNascimento(),
-                dataReferencia
-            ).getYears();
 
-        return idade + " anos";
+        int idade =
+            Period
+                .between(
+                    paciente.getDataNascimento(),
+                    dataReferencia
+                )
+                .getYears();
+
+
+        return idade
+            +
+            " anos";
     }
+
 
     private void criarParagrafoProcedimentos(
         XWPFDocument documento,
         Laudo laudo
     ) {
+
         String quantidadeSessoes =
-            laudo.getQuantidadeSessoes()
-                == null
+            laudo.getQuantidadeSessoes() == null
                 ? ""
                 : String.valueOf(
                     laudo.getQuantidadeSessoes()
                 );
 
+
         String texto =
             "Foram realizadas "
-                + quantidadeSessoes
-                + " sessões no período de "
-                + valor(
-                    laudo.getPeriodo()
-                )
-                + ", com "
-                + formatarDuracao(
-                    laudo.getDuracaoMinutos()
-                )
-                + " de duração.";
+                +
+            quantidadeSessoes
+                +
+            " sessões no período de "
+                +
+            valor(
+                laudo.getPeriodo()
+            )
+                +
+            ",com "
+                +
+            formatarDuracao(
+                laudo.getDuracaoMinutos()
+            )
+                +
+            " de duração.";
+
 
         criarParagrafoCorpo(
             documento,
@@ -1858,86 +2576,132 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private String formatarDuracao(
         Integer duracaoMinutos
     ) {
+
         if (
-            duracaoMinutos == null ||
+            duracaoMinutos == null
+            ||
             duracaoMinutos <= 0
         ) {
+
             return "1 hora";
         }
 
+
         int horas =
-            duracaoMinutos / 60;
+            duracaoMinutos
+                /
+            60;
+
 
         int minutos =
-            duracaoMinutos % 60;
+            duracaoMinutos
+                %
+            60;
 
-        if (horas == 0) {
+
+        if (
+            horas == 0
+        ) {
+
             return minutos == 1
                 ? "1 minuto"
                 : minutos + " minutos";
         }
+
 
         String textoHoras =
             horas == 1
                 ? "1 hora"
                 : horas + " horas";
 
-        if (minutos == 0) {
+
+        if (
+            minutos == 0
+        ) {
+
             return textoHoras;
         }
+
 
         String textoMinutos =
             minutos == 1
                 ? "1 minuto"
                 : minutos + " minutos";
 
+
         return textoHoras
-            + " e "
-            + textoMinutos;
+            +
+            " e "
+            +
+            textoMinutos;
     }
+
 
     private String montarPeriodoAvaliacao(
         Laudo laudo
     ) {
+
         String inicio =
             formatarData(
                 laudo.getPeriodoAvaliacaoInicio()
             );
+
 
         String fim =
             formatarData(
                 laudo.getPeriodoAvaliacaoFim()
             );
 
+
         if (
-            inicio.isBlank() &&
+            inicio.isBlank()
+            &&
             fim.isBlank()
         ) {
+
             return "";
         }
 
-        if (inicio.isBlank()) {
+
+        if (
+            inicio.isBlank()
+        ) {
+
             return fim;
         }
 
-        if (fim.isBlank()) {
+
+        if (
+            fim.isBlank()
+        ) {
+
             return inicio;
         }
 
+
         return inicio
-            + " à "
-            + fim;
+            +
+            " à "
+            +
+            fim;
     }
+
 
     private String formatarData(
         LocalDate data
     ) {
-        if (data == null) {
+
+        if (
+            data == null
+        ) {
+
             return "";
         }
+
 
         return data.format(
             DateTimeFormatter.ofPattern(
@@ -1946,56 +2710,79 @@ public class DocumentoLaudoService {
         );
     }
 
+
     private void validarRequest(
         LaudoDownloadRequest request
     ) {
-        if (request == null) {
+
+        if (
+            request == null
+        ) {
+
             throw new RuntimeException(
                 "Os dados para geração do documento são obrigatórios."
             );
         }
 
-        if (request.laudoId() == null) {
+
+        if (
+            request.laudoId() == null
+        ) {
+
             throw new RuntimeException(
                 "O ID do laudo é obrigatório."
             );
         }
     }
 
+
     private TipoPapelDocumento normalizarTipoPapel(
         String tipoPapel
     ) {
+
         if (
-            tipoPapel == null ||
+            tipoPapel == null
+            ||
             tipoPapel.isBlank()
         ) {
+
             return TipoPapelDocumento.A4;
         }
 
+
         try {
+
             return TipoPapelDocumento.valueOf(
                 tipoPapel
                     .trim()
                     .toUpperCase()
             );
-        } catch (IllegalArgumentException e) {
+
+        } catch (
+            IllegalArgumentException e
+        ) {
+
             throw new RuntimeException(
                 "Tipo de papel inválido. Use A4 ou CARTA."
             );
         }
     }
 
+
     private String montarNomeArquivo(
         Paciente paciente,
         Laudo laudo
     ) {
+
         String nomePaciente =
             paciente.getNomeCompleto() != null
-                && !paciente
-                    .getNomeCompleto()
-                    .isBlank()
-                ? paciente.getNomeCompleto()
-                : "paciente";
+                &&
+            !paciente
+                .getNomeCompleto()
+                .isBlank()
+                    ? paciente.getNomeCompleto()
+                    : "paciente";
+
 
         String data =
             laudo.getDataCriacao() != null
@@ -2014,18 +2801,25 @@ public class DocumentoLaudoService {
                         )
                     );
 
+
         return "Laudo-Neuropsicologico-"
-            + data
-            + "-"
-            + normalizarNomeArquivo(
+            +
+            data
+            +
+            "-"
+            +
+            normalizarNomeArquivo(
                 nomePaciente
             )
-            + ".docx";
+            +
+            ".docx";
     }
+
 
     private String normalizarNomeArquivo(
         String valor
     ) {
+
         return valor
             .trim()
             .replaceAll(
@@ -2038,9 +2832,11 @@ public class DocumentoLaudoService {
             );
     }
 
+
     private String valor(
         String valor
     ) {
+
         return valor == null
             ? ""
             : valor;

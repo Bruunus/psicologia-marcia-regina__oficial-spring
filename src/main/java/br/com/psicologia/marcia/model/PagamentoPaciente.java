@@ -35,6 +35,9 @@ public class PagamentoPaciente {
 
     @Column(name = "dt_pag_previsto", nullable = false)
     private LocalDate dtPagPrevisto;
+    
+    @Column(name = "dt_baixa_pagamento")
+    private LocalDate dtBaixaPagamento;
 
     @Enumerated(EnumType.STRING)
     @Column(
@@ -152,5 +155,12 @@ public class PagamentoPaciente {
 
     public void setStatusDelete(StatusDelete statusDelete) {
         this.statusDelete = statusDelete;
+    }
+    public LocalDate getDtBaixaPagamento() {
+        return dtBaixaPagamento;
+    }
+
+    public void setDtBaixaPagamento(LocalDate dtBaixaPagamento) {
+        this.dtBaixaPagamento = dtBaixaPagamento;
     }
 }

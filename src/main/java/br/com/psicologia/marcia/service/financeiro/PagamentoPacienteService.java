@@ -100,11 +100,20 @@ public class PagamentoPacienteService {
     public PagamentoPacienteResponse confirmarPagamento(ConfirmarPagamentoRequest request) {
         validarPagamentoId(request.getPagamentoId());
 
-        PagamentoPaciente pagamentoPaciente = buscarPagamentoObrigatorio(request.getPagamentoId());
+        PagamentoPaciente pagamentoPaciente =
+                buscarPagamentoObrigatorio(request.getPagamentoId());
 
-        pagamentoPaciente.setStatusPagamento(StatusPagamento.PAGO);
+        if (!StatusPagamento.PAGO.equals(
+                pagamentoPaciente.getStatusPagamento()
+        )) {
+            pagamentoPaciente.setStatusPagamento(StatusPagamento.PAGO);
+            pagamentoPaciente.setDtBaixaPagamento(
+                    LocalDate.now(ZONE_ID_SAO_PAULO)
+            );
+        }
 
-        PagamentoPaciente pagamentoAtualizado = pagamentoPacienteRepository.save(pagamentoPaciente);
+        PagamentoPaciente pagamentoAtualizado =
+                pagamentoPacienteRepository.save(pagamentoPaciente);
 
         return montarResponse(pagamentoAtualizado);
     }

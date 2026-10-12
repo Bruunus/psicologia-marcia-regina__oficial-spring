@@ -13,6 +13,7 @@ import br.com.psicologia.marcia.repository.atendimento.AtendimentoRepository;
 import br.com.psicologia.marcia.repository.paciente.CreatePacienteRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.EnderecoRepository;
 import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
+import java.time.LocalDate;
 
 @Service
 public class CreatePacienteService {
@@ -66,7 +67,9 @@ public class CreatePacienteService {
 			paciente.setGrauEscolaridade(pacienteRecord.grauEscolaridade());
 			paciente.setProfissao(pacienteRecord.profissao());
 			paciente.setStatusPaciente(StatusPaciente.ATIVADO);
+			paciente.setDataCadastro(LocalDate.now());
 			paciente.setPerfil(pacienteRecord.perfil());
+			
 			
 			
 			Atendimento pre_atendimento = new Atendimento();

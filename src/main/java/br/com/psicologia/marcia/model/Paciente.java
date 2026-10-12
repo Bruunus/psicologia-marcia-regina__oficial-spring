@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "paciente")
@@ -74,6 +75,9 @@ public class Paciente {
 	
 	@Enumerated(EnumType.STRING)
 	private StatusPaciente statusPaciente;
+	
+	@Column(name = "data_cadastro")
+	private LocalDate dataCadastro;
 	
 	
 	
@@ -273,6 +277,14 @@ public class Paciente {
 
 	public void setAtendimentos(List<Atendimento> atendimentos) {
 		this.atendimentos = atendimentos;
+	}
+	
+	public LocalDate getDataCadastro() {
+	    return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDate dataCadastro) {
+	    this.dataCadastro = dataCadastro;
 	}
 
 	

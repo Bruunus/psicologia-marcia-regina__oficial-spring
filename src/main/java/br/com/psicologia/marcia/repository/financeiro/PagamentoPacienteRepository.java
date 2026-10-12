@@ -26,6 +26,19 @@ public interface PagamentoPacienteRepository
             StatusDelete statusDelete
     );
 
+    boolean existsByPacienteIdAndStatusPagamentoAndStatusDelete(
+            Long pacienteId,
+            StatusPagamento statusPagamento,
+            StatusDelete statusDelete
+    );
+
+    List<PagamentoPaciente>
+            findByPacienteIdAndStatusPagamentoAndStatusDeleteOrderByDtBaixaPagamentoDesc(
+                    Long pacienteId,
+                    StatusPagamento statusPagamento,
+                    StatusDelete statusDelete
+            );
+
     @Query("""
         SELECT COALESCE(SUM(p.quantidadeSessao), 0)
         FROM PagamentoPaciente p

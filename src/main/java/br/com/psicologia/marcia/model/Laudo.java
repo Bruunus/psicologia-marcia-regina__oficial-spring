@@ -36,14 +36,10 @@ public class Laudo {
     )
     private String dominanciaManual;
 
-    @Column(
-        name = "periodo_avaliacao_inicio"
-    )
+    @Column(name = "periodo_avaliacao_inicio")
     private LocalDate periodoAvaliacaoInicio;
 
-    @Column(
-        name = "periodo_avaliacao_fim"
-    )
+    @Column(name = "periodo_avaliacao_fim")
     private LocalDate periodoAvaliacaoFim;
 
     @Column(
@@ -58,9 +54,7 @@ public class Laudo {
     )
     private String queixa;
 
-    @Column(
-        name = "quantidade_sessoes"
-    )
+    @Column(name = "quantidade_sessoes")
     private Integer quantidadeSessoes;
 
     @Column(
@@ -69,9 +63,7 @@ public class Laudo {
     )
     private String periodo;
 
-    @Column(
-        name = "duracao_minutos"
-    )
+    @Column(name = "duracao_minutos")
     private Integer duracaoMinutos;
 
     @Column(
@@ -122,6 +114,38 @@ public class Laudo {
     )
     private String conclusao;
 
+
+    /*
+     * ============================================================
+     * DATA DE EMISSÃO
+     * ============================================================
+     */
+
+    @Column(
+        name = "cidade_emissao",
+        length = 255
+    )
+    private String cidadeEmissao;
+
+    @Column(name = "dia_emissao")
+    private Integer diaEmissao;
+
+    @Column(
+        name = "mes_emissao",
+        length = 30
+    )
+    private String mesEmissao;
+
+    @Column(name = "ano_emissao")
+    private Integer anoEmissao;
+
+
+    /*
+     * ============================================================
+     * SEÇÕES DO DOCUMENTO
+     * ============================================================
+     */
+
     @Column(
         name = "incluir_eficiencia_intelectual",
         nullable = false
@@ -164,6 +188,13 @@ public class Laudo {
     )
     private Boolean incluirEscalaSrs2 = false;
 
+
+    /*
+     * ============================================================
+     * CONTROLE
+     * ============================================================
+     */
+
     @Column(
         name = "data_criacao",
         nullable = false,
@@ -171,9 +202,7 @@ public class Laudo {
     )
     private LocalDateTime dataCriacao;
 
-    @Column(
-        name = "data_atualizacao"
-    )
+    @Column(name = "data_atualizacao")
     private LocalDateTime dataAtualizacao;
 
     @Column(
@@ -182,80 +211,117 @@ public class Laudo {
     )
     private Boolean statusDelete = false;
 
+
     @PrePersist
     public void prePersist() {
-        LocalDateTime agora = LocalDateTime.now();
 
-        this.dataCriacao = agora;
-        this.dataAtualizacao = agora;
+        LocalDateTime agora =
+            LocalDateTime.now();
+
+        this.dataCriacao =
+            agora;
+
+        this.dataAtualizacao =
+            agora;
 
         normalizarCamposBooleanos();
     }
+
 
     @PreUpdate
     public void preUpdate() {
-        this.dataAtualizacao = LocalDateTime.now();
+
+        this.dataAtualizacao =
+            LocalDateTime.now();
 
         normalizarCamposBooleanos();
     }
 
+
     private void normalizarCamposBooleanos() {
-        if (this.incluirEficienciaIntelectual == null) {
+
+        if (
+            this.incluirEficienciaIntelectual == null
+        ) {
             this.incluirEficienciaIntelectual = false;
         }
 
-        if (this.incluirEscalaWasi == null) {
+        if (
+            this.incluirEscalaWasi == null
+        ) {
             this.incluirEscalaWasi = false;
         }
 
-        if (this.incluirFuncoesExecutivasAtencionais == null) {
+        if (
+            this.incluirFuncoesExecutivasAtencionais == null
+        ) {
             this.incluirFuncoesExecutivasAtencionais = false;
         }
 
-        if (this.incluirMemoriaVisualAuditivoVerbal == null) {
+        if (
+            this.incluirMemoriaVisualAuditivoVerbal == null
+        ) {
             this.incluirMemoriaVisualAuditivoVerbal = false;
         }
 
-        if (this.incluirMemoriaAprendizagem == null) {
+        if (
+            this.incluirMemoriaAprendizagem == null
+        ) {
             this.incluirMemoriaAprendizagem = false;
         }
 
-        if (this.incluirFuncoesVisoespaciais == null) {
+        if (
+            this.incluirFuncoesVisoespaciais == null
+        ) {
             this.incluirFuncoesVisoespaciais = false;
         }
 
-        if (this.incluirEscalaSrs2 == null) {
+        if (
+            this.incluirEscalaSrs2 == null
+        ) {
             this.incluirEscalaSrs2 = false;
         }
 
-        if (this.statusDelete == null) {
+        if (
+            this.statusDelete == null
+        ) {
             this.statusDelete = false;
         }
     }
+
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(
+        Long id
+    ) {
         this.id = id;
     }
+
 
     public Paciente getPaciente() {
         return paciente;
     }
 
-    public void setPaciente(Paciente paciente) {
+    public void setPaciente(
+        Paciente paciente
+    ) {
         this.paciente = paciente;
     }
+
 
     public String getDominanciaManual() {
         return dominanciaManual;
     }
 
-    public void setDominanciaManual(String dominanciaManual) {
+    public void setDominanciaManual(
+        String dominanciaManual
+    ) {
         this.dominanciaManual = dominanciaManual;
     }
+
 
     public LocalDate getPeriodoAvaliacaoInicio() {
         return periodoAvaliacaoInicio;
@@ -264,8 +330,10 @@ public class Laudo {
     public void setPeriodoAvaliacaoInicio(
         LocalDate periodoAvaliacaoInicio
     ) {
-        this.periodoAvaliacaoInicio = periodoAvaliacaoInicio;
+        this.periodoAvaliacaoInicio =
+            periodoAvaliacaoInicio;
     }
+
 
     public LocalDate getPeriodoAvaliacaoFim() {
         return periodoAvaliacaoFim;
@@ -274,64 +342,90 @@ public class Laudo {
     public void setPeriodoAvaliacaoFim(
         LocalDate periodoAvaliacaoFim
     ) {
-        this.periodoAvaliacaoFim = periodoAvaliacaoFim;
+        this.periodoAvaliacaoFim =
+            periodoAvaliacaoFim;
     }
+
 
     public String getEncaminhamento() {
         return encaminhamento;
     }
 
-    public void setEncaminhamento(String encaminhamento) {
+    public void setEncaminhamento(
+        String encaminhamento
+    ) {
         this.encaminhamento = encaminhamento;
     }
+
 
     public String getQueixa() {
         return queixa;
     }
 
-    public void setQueixa(String queixa) {
+    public void setQueixa(
+        String queixa
+    ) {
         this.queixa = queixa;
     }
+
 
     public Integer getQuantidadeSessoes() {
         return quantidadeSessoes;
     }
 
-    public void setQuantidadeSessoes(Integer quantidadeSessoes) {
-        this.quantidadeSessoes = quantidadeSessoes;
+    public void setQuantidadeSessoes(
+        Integer quantidadeSessoes
+    ) {
+        this.quantidadeSessoes =
+            quantidadeSessoes;
     }
+
 
     public String getPeriodo() {
         return periodo;
     }
 
-    public void setPeriodo(String periodo) {
+    public void setPeriodo(
+        String periodo
+    ) {
         this.periodo = periodo;
     }
+
 
     public Integer getDuracaoMinutos() {
         return duracaoMinutos;
     }
 
-    public void setDuracaoMinutos(Integer duracaoMinutos) {
+    public void setDuracaoMinutos(
+        Integer duracaoMinutos
+    ) {
         this.duracaoMinutos = duracaoMinutos;
     }
+
 
     public String getTestesPsicologicos() {
         return testesPsicologicos;
     }
 
-    public void setTestesPsicologicos(String testesPsicologicos) {
-        this.testesPsicologicos = testesPsicologicos;
+    public void setTestesPsicologicos(
+        String testesPsicologicos
+    ) {
+        this.testesPsicologicos =
+            testesPsicologicos;
     }
+
 
     public String getTarefasEstudos() {
         return tarefasEstudos;
     }
 
-    public void setTarefasEstudos(String tarefasEstudos) {
-        this.tarefasEstudos = tarefasEstudos;
+    public void setTarefasEstudos(
+        String tarefasEstudos
+    ) {
+        this.tarefasEstudos =
+            tarefasEstudos;
     }
+
 
     public String getEscalasQuestionarios() {
         return escalasQuestionarios;
@@ -340,24 +434,34 @@ public class Laudo {
     public void setEscalasQuestionarios(
         String escalasQuestionarios
     ) {
-        this.escalasQuestionarios = escalasQuestionarios;
+        this.escalasQuestionarios =
+            escalasQuestionarios;
     }
+
 
     public String getDadosAnamnese() {
         return dadosAnamnese;
     }
 
-    public void setDadosAnamnese(String dadosAnamnese) {
-        this.dadosAnamnese = dadosAnamnese;
+    public void setDadosAnamnese(
+        String dadosAnamnese
+    ) {
+        this.dadosAnamnese =
+            dadosAnamnese;
     }
+
 
     public String getDadosAtuais() {
         return dadosAtuais;
     }
 
-    public void setDadosAtuais(String dadosAtuais) {
-        this.dadosAtuais = dadosAtuais;
+    public void setDadosAtuais(
+        String dadosAtuais
+    ) {
+        this.dadosAtuais =
+            dadosAtuais;
     }
+
 
     public String getObservacoesClinicas() {
         return observacoesClinicas;
@@ -366,8 +470,10 @@ public class Laudo {
     public void setObservacoesClinicas(
         String observacoesClinicas
     ) {
-        this.observacoesClinicas = observacoesClinicas;
+        this.observacoesClinicas =
+            observacoesClinicas;
     }
+
 
     public String getEficienciaIntelectual() {
         return eficienciaIntelectual;
@@ -376,16 +482,76 @@ public class Laudo {
     public void setEficienciaIntelectual(
         String eficienciaIntelectual
     ) {
-        this.eficienciaIntelectual = eficienciaIntelectual;
+        this.eficienciaIntelectual =
+            eficienciaIntelectual;
     }
+
 
     public String getConclusao() {
         return conclusao;
     }
 
-    public void setConclusao(String conclusao) {
-        this.conclusao = conclusao;
+    public void setConclusao(
+        String conclusao
+    ) {
+        this.conclusao =
+            conclusao;
     }
+
+
+    /*
+     * ============================================================
+     * DATA DE EMISSÃO
+     * ============================================================
+     */
+
+    public String getCidadeEmissao() {
+        return cidadeEmissao;
+    }
+
+    public void setCidadeEmissao(
+        String cidadeEmissao
+    ) {
+        this.cidadeEmissao =
+            cidadeEmissao;
+    }
+
+
+    public Integer getDiaEmissao() {
+        return diaEmissao;
+    }
+
+    public void setDiaEmissao(
+        Integer diaEmissao
+    ) {
+        this.diaEmissao =
+            diaEmissao;
+    }
+
+
+    public String getMesEmissao() {
+        return mesEmissao;
+    }
+
+    public void setMesEmissao(
+        String mesEmissao
+    ) {
+        this.mesEmissao =
+            mesEmissao;
+    }
+
+
+    public Integer getAnoEmissao() {
+        return anoEmissao;
+    }
+
+    public void setAnoEmissao(
+        Integer anoEmissao
+    ) {
+        this.anoEmissao =
+            anoEmissao;
+    }
+
 
     public Boolean getIncluirEficienciaIntelectual() {
         return incluirEficienciaIntelectual;
@@ -398,6 +564,7 @@ public class Laudo {
             incluirEficienciaIntelectual;
     }
 
+
     public Boolean getIncluirEscalaWasi() {
         return incluirEscalaWasi;
     }
@@ -405,8 +572,10 @@ public class Laudo {
     public void setIncluirEscalaWasi(
         Boolean incluirEscalaWasi
     ) {
-        this.incluirEscalaWasi = incluirEscalaWasi;
+        this.incluirEscalaWasi =
+            incluirEscalaWasi;
     }
+
 
     public Boolean getIncluirFuncoesExecutivasAtencionais() {
         return incluirFuncoesExecutivasAtencionais;
@@ -419,6 +588,7 @@ public class Laudo {
             incluirFuncoesExecutivasAtencionais;
     }
 
+
     public Boolean getIncluirMemoriaVisualAuditivoVerbal() {
         return incluirMemoriaVisualAuditivoVerbal;
     }
@@ -429,6 +599,7 @@ public class Laudo {
         this.incluirMemoriaVisualAuditivoVerbal =
             incluirMemoriaVisualAuditivoVerbal;
     }
+
 
     public Boolean getIncluirMemoriaAprendizagem() {
         return incluirMemoriaAprendizagem;
@@ -441,6 +612,7 @@ public class Laudo {
             incluirMemoriaAprendizagem;
     }
 
+
     public Boolean getIncluirFuncoesVisoespaciais() {
         return incluirFuncoesVisoespaciais;
     }
@@ -452,6 +624,7 @@ public class Laudo {
             incluirFuncoesVisoespaciais;
     }
 
+
     public Boolean getIncluirEscalaSrs2() {
         return incluirEscalaSrs2;
     }
@@ -459,16 +632,21 @@ public class Laudo {
     public void setIncluirEscalaSrs2(
         Boolean incluirEscalaSrs2
     ) {
-        this.incluirEscalaSrs2 = incluirEscalaSrs2;
+        this.incluirEscalaSrs2 =
+            incluirEscalaSrs2;
     }
+
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
     }
 
-    public void setDataCriacao(LocalDateTime dataCriacao) {
+    public void setDataCriacao(
+        LocalDateTime dataCriacao
+    ) {
         this.dataCriacao = dataCriacao;
     }
+
 
     public LocalDateTime getDataAtualizacao() {
         return dataAtualizacao;
@@ -480,11 +658,14 @@ public class Laudo {
         this.dataAtualizacao = dataAtualizacao;
     }
 
+
     public Boolean getStatusDelete() {
         return statusDelete;
     }
 
-    public void setStatusDelete(Boolean statusDelete) {
+    public void setStatusDelete(
+        Boolean statusDelete
+    ) {
         this.statusDelete = statusDelete;
     }
 }

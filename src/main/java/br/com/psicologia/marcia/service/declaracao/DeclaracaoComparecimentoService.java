@@ -3,6 +3,7 @@ package br.com.psicologia.marcia.service.declaracao;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,36 +29,73 @@ public class DeclaracaoComparecimentoService {
             DeclaracaoComparecimentoRepository declaracaoComparecimentoRepository,
             UpdatePacienteRepository pacienteRepository
     ) {
-        this.declaracaoComparecimentoRepository = declaracaoComparecimentoRepository;
+        this.declaracaoComparecimentoRepository =
+                declaracaoComparecimentoRepository;
         this.pacienteRepository = pacienteRepository;
     }
 
     @Transactional
-    public DeclaracaoComparecimentoResponse salvar(DeclaracaoComparecimentoRequest request) {
+    public DeclaracaoComparecimentoResponse salvar(
+            DeclaracaoComparecimentoRequest request
+    ) {
         validarRequest(request);
 
-        Paciente paciente = pacienteRepository.findById(request.getPacienteId())
+        Paciente paciente = pacienteRepository
+                .findById(request.getPacienteId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Paciente não encontrado."
                 ));
 
-        DeclaracaoComparecimento declaracao = new DeclaracaoComparecimento();
-        declaracao.setPaciente(paciente);
-        declaracao.setDataComparecimento(request.getDataComparecimento());
-        declaracao.setHoraInicio(definirHoraInicio(request));
-        declaracao.setHoraTermino(definirHoraTermino(request));
-        declaracao.setOrientacao(request.getOrientacao());
-        declaracao.setQuantidadeDiasRepouso(definirQuantidadeDiasRepouso(request));
-        declaracao.setDataEmissao(definirDataEmissao(request.getDataEmissao()));
-        declaracao.setStatusDelete(StatusDelete.NAO_DELETADO);
+        DeclaracaoComparecimento declaracao =
+                new DeclaracaoComparecimento();
 
-        DeclaracaoComparecimento declaracaoSalva = declaracaoComparecimentoRepository.save(declaracao);
+        declaracao.setPaciente(paciente);
+        declaracao.setDataComparecimento(
+                request.getDataComparecimento()
+        );
+        declaracao.setHoraInicio(
+                definirHoraInicio(request)
+        );
+        declaracao.setHoraTermino(
+                definirHoraTermino(request)
+        );
+        declaracao.setOrientacao(
+                request.getOrientacao()
+        );
+        declaracao.setQuantidadeDiasRepouso(
+                definirQuantidadeDiasRepouso(request)
+        );
+        declaracao.setDataEmissao(
+                definirDataEmissao(request.getDataEmissao())
+        );
+        declaracao.setStatusDelete(
+                StatusDelete.NAO_DELETADO
+        );
+
+        DeclaracaoComparecimento declaracaoSalva =
+                declaracaoComparecimentoRepository.save(declaracao);
 
         return montarResponse(declaracaoSalva);
     }
 
-    private void validarRequest(DeclaracaoComparecimentoRequest request) {
+    @Transactional(readOnly = true)
+    public List<DeclaracaoComparecimentoResponse> listarPorPaciente(
+            Long pacienteId
+    ) {
+        return declaracaoComparecimentoRepository
+                .findByPacienteIdAndStatusDeleteOrderByDataEmissaoDesc(
+                        pacienteId,
+                        StatusDelete.NAO_DELETADO
+                )
+                .stream()
+                .map(this::montarResponse)
+                .toList();
+    }
+
+    private void validarRequest(
+            DeclaracaoComparecimentoRequest request
+    ) {
         if (request == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -86,17 +124,25 @@ public class DeclaracaoComparecimentoService {
             );
         }
 
-        if (OrientacaoDeclaracaoComparecimento.RETORNAR_AO_TRABALHO.equals(request.getOrientacao())) {
+        if (OrientacaoDeclaracaoComparecimento
+                .RETORNAR_AO_TRABALHO
+                .equals(request.getOrientacao())) {
+
             validarHorasParaRetornoAoTrabalho(request);
             return;
         }
 
-        if (OrientacaoDeclaracaoComparecimento.PERMANECER_EM_REPOUSO.equals(request.getOrientacao())) {
+        if (OrientacaoDeclaracaoComparecimento
+                .PERMANECER_EM_REPOUSO
+                .equals(request.getOrientacao())) {
+
             validarDiasRepouso(request);
         }
     }
 
-    private void validarHorasParaRetornoAoTrabalho(DeclaracaoComparecimentoRequest request) {
+    private void validarHorasParaRetornoAoTrabalho(
+            DeclaracaoComparecimentoRequest request
+    ) {
         if (request.getHoraInicio() == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -111,8 +157,11 @@ public class DeclaracaoComparecimentoService {
             );
         }
 
-        if (request.getHoraTermino().isBefore(request.getHoraInicio())
-                || request.getHoraTermino().equals(request.getHoraInicio())) {
+        if (request.getHoraTermino()
+                .isBefore(request.getHoraInicio())
+                || request.getHoraTermino()
+                        .equals(request.getHoraInicio())) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Hora de término deve ser maior que a hora de início."
@@ -120,8 +169,12 @@ public class DeclaracaoComparecimentoService {
         }
     }
 
-    private void validarDiasRepouso(DeclaracaoComparecimentoRequest request) {
-        if (request.getQuantidadeDiasRepouso() == null || request.getQuantidadeDiasRepouso() <= 0) {
+    private void validarDiasRepouso(
+            DeclaracaoComparecimentoRequest request
+    ) {
+        if (request.getQuantidadeDiasRepouso() == null
+                || request.getQuantidadeDiasRepouso() <= 0) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Quantidade de dias de repouso é obrigatória quando a orientação for permanecer em repouso."
@@ -129,39 +182,60 @@ public class DeclaracaoComparecimentoService {
         }
     }
 
-    private LocalTime definirHoraInicio(DeclaracaoComparecimentoRequest request) {
-        if (OrientacaoDeclaracaoComparecimento.RETORNAR_AO_TRABALHO.equals(request.getOrientacao())) {
+    private LocalTime definirHoraInicio(
+            DeclaracaoComparecimentoRequest request
+    ) {
+        if (OrientacaoDeclaracaoComparecimento
+                .RETORNAR_AO_TRABALHO
+                .equals(request.getOrientacao())) {
+
             return request.getHoraInicio();
         }
 
         return null;
     }
 
-    private LocalTime definirHoraTermino(DeclaracaoComparecimentoRequest request) {
-        if (OrientacaoDeclaracaoComparecimento.RETORNAR_AO_TRABALHO.equals(request.getOrientacao())) {
+    private LocalTime definirHoraTermino(
+            DeclaracaoComparecimentoRequest request
+    ) {
+        if (OrientacaoDeclaracaoComparecimento
+                .RETORNAR_AO_TRABALHO
+                .equals(request.getOrientacao())) {
+
             return request.getHoraTermino();
         }
 
         return null;
     }
 
-    private Integer definirQuantidadeDiasRepouso(DeclaracaoComparecimentoRequest request) {
-        if (OrientacaoDeclaracaoComparecimento.PERMANECER_EM_REPOUSO.equals(request.getOrientacao())) {
+    private Integer definirQuantidadeDiasRepouso(
+            DeclaracaoComparecimentoRequest request
+    ) {
+        if (OrientacaoDeclaracaoComparecimento
+                .PERMANECER_EM_REPOUSO
+                .equals(request.getOrientacao())) {
+
             return request.getQuantidadeDiasRepouso();
         }
 
         return null;
     }
 
-    private LocalDate definirDataEmissao(LocalDate dataEmissao) {
+    private LocalDate definirDataEmissao(
+            LocalDate dataEmissao
+    ) {
         if (dataEmissao != null) {
             return dataEmissao;
         }
 
-        return LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        return LocalDate.now(
+                ZoneId.of("America/Sao_Paulo")
+        );
     }
 
-    private DeclaracaoComparecimentoResponse montarResponse(DeclaracaoComparecimento declaracao) {
+    private DeclaracaoComparecimentoResponse montarResponse(
+            DeclaracaoComparecimento declaracao
+    ) {
         return new DeclaracaoComparecimentoResponse(
                 declaracao.getId(),
                 declaracao.getPaciente().getId(),
