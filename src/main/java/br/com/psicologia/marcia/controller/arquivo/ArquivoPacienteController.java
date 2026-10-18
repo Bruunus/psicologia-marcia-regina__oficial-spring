@@ -1,3 +1,4 @@
+
 package br.com.psicologia.marcia.controller.arquivo;
 
 import java.util.Collections;
@@ -15,6 +16,8 @@ import br.com.psicologia.marcia.DTO.arquivo.ArquivoPacienteDocumentosResponse;
 import br.com.psicologia.marcia.DTO.arquivo.BuscarPacienteArquivadoRequest;
 import br.com.psicologia.marcia.DTO.arquivo.CarregarArquivoPacienteRequest;
 import br.com.psicologia.marcia.DTO.arquivo.PacienteArquivadoResponse;
+import br.com.psicologia.marcia.DTO.arquivo.RestaurarTratamentoRequest;
+
 import br.com.psicologia.marcia.service.arquivo.ArquivoPacienteService;
 
 @RestController
@@ -78,6 +81,52 @@ public class ArquivoPacienteController {
         } catch (NoSuchElementException e) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
+                    .body(
+                            Collections.singletonMap(
+                                    "mensagem",
+                                    e.getMessage()
+                            )
+                    );
+        }
+    }
+
+    @PostMapping("/restaurar-tratamento")
+    public ResponseEntity<?> restaurarTratamento(
+            @RequestBody RestaurarTratamentoRequest request
+    ) {
+        try {
+            arquivoPacienteService.restaurarTratamento(request);
+
+            return ResponseEntity.ok(
+                    Collections.singletonMap(
+                            "mensagem",
+                            "Tratamento restaurado com sucesso."
+                    )
+            );
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(
+                            Collections.singletonMap(
+                                    "mensagem",
+                                    e.getMessage()
+                            )
+                    );
+
+        } catch (NoSuchElementException e) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(
+                            Collections.singletonMap(
+                                    "mensagem",
+                                    e.getMessage()
+                            )
+                    );
+
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
                     .body(
                             Collections.singletonMap(
                                     "mensagem",
