@@ -1,3 +1,4 @@
+
 # DEV
 spring.application.name=psicologia-marcia-regina__oficial-spring
 spring.datasource.url=jdbc:mariadb://localhost:3306/psicologia_marcia_test
@@ -18,4 +19,15 @@ api.security.token.secret=${JWT_SECRET:12345678901234567890123456789012}
 
 
 # 30 minutos em milissegundos
-jwt.expiracao=1800000  
+jwt.expiracao=1800000
+
+
+# ==========================================
+# ANEXOS DE DOCUMENTOS - MODULO ARQUIVO
+# ==========================================
+
+# Tamanho maximo permitido por arquivo
+spring.servlet.multipart.max-file-size=10MB
+
+# Tamanho maximo da requisicao multipart
+spring.servlet.multipart.max-request-size=12MB
