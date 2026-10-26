@@ -20,7 +20,7 @@ public class DocumentoLayoutConfig {
     }
 
     public int tamanhoFonteTexto() {
-        return 10;
+        return 11;
     }
 
     public int tamanhoFonteCabecalho() {

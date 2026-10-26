@@ -1,3 +1,4 @@
+
 package br.com.psicologia.marcia.controller.declaracao;
 
 import org.springframework.http.HttpHeaders;
@@ -10,10 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.psicologia.marcia.DTO.declaracao.DeclaracaoComparecimentoPdfRequest;
 import br.com.psicologia.marcia.DTO.declaracao.DeclaracaoComparecimentoRequest;
 import br.com.psicologia.marcia.DTO.declaracao.DeclaracaoComparecimentoResponse;
 import br.com.psicologia.marcia.DTO.declaracao.DeclaracaoComparecimentoWordArquivo;
 import br.com.psicologia.marcia.DTO.declaracao.DeclaracaoComparecimentoWordRequest;
+import br.com.psicologia.marcia.service.declaracao.DeclaracaoComparecimentoPdfService;
 import br.com.psicologia.marcia.service.declaracao.DeclaracaoComparecimentoService;
 import br.com.psicologia.marcia.service.declaracao.DeclaracaoComparecimentoWordService;
 
@@ -23,13 +26,16 @@ public class DeclaracaoComparecimentoController {
 
     private final DeclaracaoComparecimentoService declaracaoComparecimentoService;
     private final DeclaracaoComparecimentoWordService declaracaoComparecimentoWordService;
+    private final DeclaracaoComparecimentoPdfService declaracaoComparecimentoPdfService;
 
     public DeclaracaoComparecimentoController(
             DeclaracaoComparecimentoService declaracaoComparecimentoService,
-            DeclaracaoComparecimentoWordService declaracaoComparecimentoWordService
+            DeclaracaoComparecimentoWordService declaracaoComparecimentoWordService,
+            DeclaracaoComparecimentoPdfService declaracaoComparecimentoPdfService
     ) {
         this.declaracaoComparecimentoService = declaracaoComparecimentoService;
         this.declaracaoComparecimentoWordService = declaracaoComparecimentoWordService;
+        this.declaracaoComparecimentoPdfService = declaracaoComparecimentoPdfService;
     }
 
     @PostMapping("/salvar")
@@ -37,7 +43,9 @@ public class DeclaracaoComparecimentoController {
     public ResponseEntity<DeclaracaoComparecimentoResponse> salvar(
             @RequestBody DeclaracaoComparecimentoRequest request
     ) {
-        DeclaracaoComparecimentoResponse response = declaracaoComparecimentoService.salvar(request);
+        DeclaracaoComparecimentoResponse response =
+                declaracaoComparecimentoService.salvar(request);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -45,7 +53,8 @@ public class DeclaracaoComparecimentoController {
     public ResponseEntity<byte[]> baixarWord(
             @RequestBody DeclaracaoComparecimentoWordRequest request
     ) {
-        DeclaracaoComparecimentoWordArquivo arquivo = declaracaoComparecimentoWordService.baixarWord(request);
+        DeclaracaoComparecimentoWordArquivo arquivo =
+                declaracaoComparecimentoWordService.baixarWord(request);
 
         String nomeArquivoCodificado = declaracaoComparecimentoWordService
                 .codificarNomeArquivo(arquivo.getNomeArquivo());
@@ -56,9 +65,28 @@ public class DeclaracaoComparecimentoController {
                 ))
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + arquivo.getNomeArquivo() + "\"; filename*=UTF-8''" + nomeArquivoCodificado
+                        "attachment; filename=\"" + arquivo.getNomeArquivo()
+                                + "\"; filename*=UTF-8''" + nomeArquivoCodificado
                 )
-                .header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(
+                        HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                        HttpHeaders.CONTENT_DISPOSITION
+                )
                 .body(arquivo.getConteudo());
+    }
+
+    @PostMapping("/visualizar")
+    public ResponseEntity<byte[]> visualizar(
+            @RequestBody DeclaracaoComparecimentoPdfRequest request
+    ) {
+        byte[] pdf = declaracaoComparecimentoPdfService.gerarPdf(request);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"Declaracao-Comparecimento.pdf\""
+                )
+                .body(pdf);
     }
 }

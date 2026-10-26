@@ -1,0 +1,916 @@
+
+package br.com.psicologia.marcia.service.financeiro;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+import javax.imageio.ImageIO;
+
+import org.apache.poi.xwpf.usermodel.Document;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
+import org.apache.poi.xwpf.usermodel.TableRowAlign;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTabStop;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTabs;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTcPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblWidth;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTabJc;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import br.com.psicologia.marcia.DTO.financeiro.ReciboDownloadRequest;
+import br.com.psicologia.marcia.model.Paciente;
+import br.com.psicologia.marcia.model.PagamentoPaciente;
+import br.com.psicologia.marcia.model.enums.StatusDelete;
+import br.com.psicologia.marcia.model.enums.StatusPagamento;
+import br.com.psicologia.marcia.model.enums.TipoPapelDocumento;
+import br.com.psicologia.marcia.repository.financeiro.PagamentoPacienteRepository;
+import br.com.psicologia.marcia.service.documento.ConfiguracaoDocumento;
+import br.com.psicologia.marcia.service.documento.DocumentoLayoutConfig;
+
+@Service
+public class ReciboWordService {
+
+    private static final int TAMANHO_FONTE_PADRAO = 11;
+    private static final int TAMANHO_FONTE_TITULO = 14;
+
+    private static final String CAMINHO_LOGO =
+            "documentos/imagens/logo-completo.png";
+
+    private static final String ASSINATURA =
+            "MARCIA REGINA - PSICÓLOGA E NEUROPSICÓLOGA";
+
+    private static final String COR_CINZA = "F2F2F2";
+    private static final String COR_CINZA_CLARO = "F8F8F8";
+    private static final String COR_BORDA = "D0D0D0";
+    private static final String COR_VERDE = "237A43";
+
+    private static final DateTimeFormatter FORMATO_DATA =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static final DateTimeFormatter FORMATO_EXTENSO =
+            DateTimeFormatter.ofPattern(
+                    "d 'de' MMMM 'de' yyyy",
+                    Locale.forLanguageTag("pt-BR")
+            );
+
+    private static final Locale LOCALE_BRASIL =
+            Locale.forLanguageTag("pt-BR");
+
+    private final PagamentoPacienteRepository repository;
+    private final ConfiguracaoDocumento configuracaoDocumento;
+    private final DocumentoLayoutConfig layoutConfig;
+
+    public ReciboWordService(
+            PagamentoPacienteRepository repository,
+            ConfiguracaoDocumento configuracaoDocumento,
+            DocumentoLayoutConfig layoutConfig
+    ) {
+        this.repository = repository;
+        this.configuracaoDocumento = configuracaoDocumento;
+        this.layoutConfig = layoutConfig;
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] gerarWord(ReciboDownloadRequest request) {
+
+        if (request == null || request.pagamentoId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O ID do pagamento é obrigatório."
+            );
+        }
+
+        TipoPapelDocumento tipoPapel =
+                validarTipoPapel(request.tipoPapel());
+
+        PagamentoPaciente pagamento = repository
+                .findByIdAndStatusDelete(
+                        request.pagamentoId(),
+                        StatusDelete.NAO_DELETADO
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pagamento não encontrado."
+                ));
+
+        if (!StatusPagamento.PAGO.equals(
+                pagamento.getStatusPagamento()
+        )) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Somente pagamentos quitados podem gerar recibos."
+            );
+        }
+
+        try (
+                XWPFDocument documento = new XWPFDocument();
+                ByteArrayOutputStream saida = new ByteArrayOutputStream()
+        ) {
+            configuracaoDocumento.configurar(documento, tipoPapel);
+
+            adicionarLogotipo(documento);
+            adicionarTitulo(documento);
+            adicionarQuadroRecibo(documento, pagamento, tipoPapel);
+            adicionarDadosPaciente(documento, pagamento);
+            adicionarDeclaracaoRecebimento(documento, pagamento);
+            adicionarDetalhesPagamento(documento, pagamento, tipoPapel);
+            adicionarStatus(documento, tipoPapel);
+            adicionarData(documento, pagamento);
+            adicionarAssinatura(documento);
+
+            documento.write(saida);
+
+            return saida.toByteArray();
+
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Não foi possível gerar o Word do recibo.",
+                    exception
+            );
+        }
+    }
+
+    private TipoPapelDocumento validarTipoPapel(String valor) {
+
+        if (valor == null || valor.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O tipo de papel é obrigatório."
+            );
+        }
+
+        try {
+            return configuracaoDocumento.normalizarTipoPapel(
+                    TipoPapelDocumento.valueOf(
+                            valor.trim().toUpperCase(Locale.ROOT)
+                    )
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tipo de papel inválido. Use A4 ou CARTA."
+            );
+        }
+    }
+
+    private void adicionarLogotipo(XWPFDocument documento)
+            throws Exception {
+
+        ClassPathResource recurso =
+                new ClassPathResource(CAMINHO_LOGO);
+
+        if (!recurso.exists()) {
+            throw new IllegalStateException(
+                    "Logotipo não encontrado: " + CAMINHO_LOGO
+            );
+        }
+
+        BufferedImage imagem;
+
+        try (InputStream entrada = recurso.getInputStream()) {
+            imagem = ImageIO.read(entrada);
+        }
+
+        if (imagem == null) {
+            throw new IllegalStateException(
+                    "Não foi possível interpretar o logotipo."
+            );
+        }
+
+        double larguraCm = 4.0;
+        double alturaCm = larguraCm
+                * imagem.getHeight()
+                / imagem.getWidth();
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.CENTER);
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(940);
+
+        XWPFRun run = paragrafo.createRun();
+
+        try (InputStream entrada = recurso.getInputStream()) {
+            run.addPicture(
+                    entrada,
+                    Document.PICTURE_TYPE_PNG,
+                    "logo-completo.png",
+                    layoutConfig.centimetrosParaEmu(larguraCm),
+                    layoutConfig.centimetrosParaEmu(alturaCm)
+            );
+        }
+    }
+
+    private void adicionarTitulo(XWPFDocument documento) {
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.CENTER);
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(650);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setFontSize(TAMANHO_FONTE_TITULO);
+        run.setBold(true);
+        run.setText("Recibo de Pagamento");
+    }
+
+    private void adicionarQuadroRecibo(
+            XWPFDocument documento,
+            PagamentoPaciente pagamento,
+            TipoPapelDocumento tipoPapel
+    ) {
+        XWPFTable tabela = criarTabela(documento, 1);
+
+        configurarBordas(tabela, "B8B8B8", 8, false);
+
+        XWPFTableCell celula = tabela.getRow(0).getCell(0);
+        celula.setColor(COR_CINZA);
+
+        XWPFParagraph paragrafo = obterParagrafo(celula);
+        paragrafo.setAlignment(ParagraphAlignment.LEFT);
+
+        configurarTabulacao(
+                paragrafo,
+                larguraTabDireita(tipoPapel),
+                STTabJc.RIGHT
+        );
+
+        String numero = String.format(
+                Locale.ROOT,
+                "%06d",
+                pagamento.getId()
+        );
+
+        adicionarTrecho(paragrafo, "Recibo: ", false);
+        adicionarTrecho(paragrafo, "Nº " + numero, true);
+
+        XWPFRun tab = paragrafo.createRun();
+        aplicarFontePadrao(tab);
+        tab.addTab();
+
+        adicionarTrecho(paragrafo, "Pagamento: ", false);
+
+        adicionarTrecho(
+                paragrafo,
+                formatarData(pagamento.getDtBaixaPagamento()),
+                true
+        );
+
+        espacamento(documento, 260);
+    }
+
+    private void adicionarDadosPaciente(
+            XWPFDocument documento,
+            PagamentoPaciente pagamento
+    ) {
+        adicionarSubtitulo(documento, "Dados do paciente");
+
+        XWPFTable tabela = criarTabela(documento, 1);
+        configurarBordas(tabela, COR_BORDA, 4, false);
+
+        adicionarLinhaPaciente(
+                tabela.getRow(0).getCell(0),
+                "Nome",
+                obterNomePaciente(pagamento)
+        );
+
+        XWPFTableRow linhaCpf = tabela.createRow();
+
+        adicionarLinhaPaciente(
+                linhaCpf.getCell(0),
+                "CPF",
+                obterCpfPaciente(pagamento)
+        );
+
+        espacamento(documento, 220);
+    }
+
+    private void adicionarLinhaPaciente(
+            XWPFTableCell celula,
+            String rotulo,
+            String valor
+    ) {
+        XWPFParagraph paragrafo = obterParagrafo(celula);
+
+        paragrafo.setAlignment(ParagraphAlignment.LEFT);
+
+        configurarTabulacao(
+                paragrafo,
+                1650,
+                STTabJc.LEFT
+        );
+
+        XWPFRun rotuloRun = paragrafo.createRun();
+
+        aplicarFontePadrao(rotuloRun);
+        rotuloRun.setColor("666666");
+        rotuloRun.setText(rotulo);
+        rotuloRun.addTab();
+
+        adicionarTrecho(paragrafo, valor, true);
+    }
+
+    private void adicionarDeclaracaoRecebimento(
+            XWPFDocument documento,
+            PagamentoPaciente pagamento
+    ) {
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.BOTH);
+        paragrafo.setIndentationFirstLine(
+                layoutConfig.recuoPrimeiraLinhaCorpoTwips()
+        );
+
+        paragrafo.setSpacingBetween(1.15);
+        paragrafo.setSpacingBefore(180);
+        paragrafo.setSpacingAfter(380);
+
+        adicionarTrecho(paragrafo, "Recebemos de ", false);
+
+        adicionarTrecho(
+                paragrafo,
+                obterNomePaciente(pagamento),
+                true
+        );
+
+        adicionarTrecho(
+                paragrafo,
+                " a importância de ",
+                false
+        );
+
+        adicionarTrecho(
+                paragrafo,
+                formatarMoeda(calcularValorTotal(pagamento)),
+                true
+        );
+
+        adicionarTrecho(
+                paragrafo,
+                " referente ao atendimento terapêutico descrito "
+                + "neste recibo, dando plena quitação do pagamento realizado.",
+                false
+        );
+    }
+
+    private void adicionarDetalhesPagamento(
+            XWPFDocument documento,
+            PagamentoPaciente pagamento,
+            TipoPapelDocumento tipoPapel
+    ) {
+        adicionarSubtitulo(documento, "Detalhes do pagamento");
+
+        XWPFTable tabela = criarTabela(documento, 4);
+        configurarBordas(tabela, COR_BORDA, 4, true);
+
+        String[] colunas = {
+                "Descrição",
+                "Data",
+                "Forma de pagamento",
+                "Valor"
+        };
+
+        XWPFTableRow cabecalho = tabela.getRow(0);
+
+        for (int i = 0; i < colunas.length; i++) {
+            adicionarTextoCelula(
+                    cabecalho.getCell(i),
+                    colunas[i],
+                    true,
+                    ParagraphAlignment.LEFT
+            );
+        }
+
+        aplicarFundoLinha(cabecalho, "E6E6E6");
+
+        XWPFTableRow detalhe = tabela.createRow();
+
+        Integer quantidade = pagamento.getQuantidadeSessao();
+
+        String descricao = quantidade != null && quantidade > 1
+                ? "Consulta terapêutica (" + quantidade + " sessões)"
+                : "Consulta terapêutica";
+
+        adicionarTextoCelula(
+                detalhe.getCell(0),
+                descricao,
+                false,
+                ParagraphAlignment.LEFT
+        );
+
+        adicionarTextoCelula(
+                detalhe.getCell(1),
+                formatarData(pagamento.getDtDoAtendimento()),
+                false,
+                ParagraphAlignment.LEFT
+        );
+
+        adicionarTextoCelula(
+                detalhe.getCell(2),
+                formatarTipoPagamento(pagamento),
+                false,
+                ParagraphAlignment.LEFT
+        );
+
+        adicionarTextoCelula(
+                detalhe.getCell(3),
+                formatarMoeda(calcularValorTotal(pagamento)),
+                true,
+                ParagraphAlignment.RIGHT
+        );
+
+        // Altura ampliada somente na linha Total pago.
+        XWPFTableRow linhaTotal = tabela.createRow();
+        linhaTotal.setHeight(650);
+
+        for (int i = 3; i >= 1; i--) {
+            linhaTotal.removeCell(i);
+        }
+
+        XWPFTableCell celulaTotal = linhaTotal.getCell(0);
+        CTTcPr propriedades = celulaTotal.getCTTc().getTcPr();
+
+        if (propriedades == null) {
+            propriedades = celulaTotal.getCTTc().addNewTcPr();
+        }
+
+        CTDecimalNumber mesclagem = propriedades.isSetGridSpan()
+                ? propriedades.getGridSpan()
+                : propriedades.addNewGridSpan();
+
+        mesclagem.setVal(BigInteger.valueOf(4));
+
+        XWPFParagraph paragrafo = obterParagrafo(celulaTotal);
+
+        // Espaçamento vertical interno do Total pago.
+        paragrafo.setSpacingBefore(120);
+        paragrafo.setSpacingAfter(120);
+
+        configurarTabulacao(
+                paragrafo,
+                larguraTabDireita(tipoPapel),
+                STTabJc.RIGHT
+        );
+
+        adicionarTrecho(paragrafo, "Total pago", true);
+
+        XWPFRun tab = paragrafo.createRun();
+        aplicarFontePadrao(tab);
+        tab.addTab();
+
+        adicionarTrecho(
+                paragrafo,
+                formatarMoeda(calcularValorTotal(pagamento)),
+                true
+        );
+
+        espacamento(documento, 360);
+
+        ajustarLargurasDetalhes(tabela, tipoPapel);
+    }
+
+    private void ajustarLargurasDetalhes(
+            XWPFTable tabela,
+            TipoPapelDocumento tipoPapel
+    ) {
+        int total = larguraConteudoPagina(tipoPapel);
+
+        int[] larguras = {
+                Math.round(total * 0.30f),
+                Math.round(total * 0.17f),
+                Math.round(total * 0.34f),
+                0
+        };
+
+        larguras[3] = total
+                - larguras[0]
+                - larguras[1]
+                - larguras[2];
+
+        var grid = tabela.getCTTbl().getTblGrid();
+
+        if (grid == null) {
+            grid = tabela.getCTTbl().addNewTblGrid();
+        }
+
+        while (grid.sizeOfGridColArray() < 4) {
+            grid.addNewGridCol();
+        }
+
+        for (int i = 0; i < 4; i++) {
+            grid.getGridColArray(i).setW(
+                    BigInteger.valueOf(larguras[i])
+            );
+        }
+
+        for (XWPFTableRow linha : tabela.getRows()) {
+            if (linha.getTableCells().size() == 4) {
+                for (int i = 0; i < 4; i++) {
+                    definirLarguraCelula(
+                            linha.getCell(i),
+                            larguras[i]
+                    );
+                }
+            } else if (linha.getTableCells().size() == 1) {
+                definirLarguraCelula(linha.getCell(0), total);
+            }
+        }
+    }
+
+    private void adicionarStatus(
+            XWPFDocument documento,
+            TipoPapelDocumento tipoPapel
+    ) {
+        XWPFTable tabela = criarTabela(documento, 2);
+
+        // Altura ampliada somente na linha do status.
+        tabela.getRow(0).setHeight(750);
+
+        configurarBordas(tabela, "555555", 6, true);
+
+        XWPFTableCell celulaTexto =
+                tabela.getRow(0).getCell(0);
+
+        XWPFTableCell celulaStatus =
+                tabela.getRow(0).getCell(1);
+
+        int larguraTotal = larguraConteudoPagina(tipoPapel);
+
+        definirLarguraCelula(
+                celulaTexto,
+                (int) (larguraTotal * 0.87)
+        );
+
+        definirLarguraCelula(
+                celulaStatus,
+                (int) (larguraTotal * 0.13)
+        );
+
+        celulaTexto.setColor(COR_CINZA_CLARO);
+        celulaStatus.setColor("E8F5EC");
+
+        adicionarTextoCelula(
+                celulaTexto,
+                "Status do pagamento",
+                true,
+                ParagraphAlignment.LEFT
+        );
+
+        adicionarTextoCelula(
+                celulaStatus,
+                "PAGO",
+                true,
+                ParagraphAlignment.CENTER
+        );
+
+        // Padding vertical nas duas células da linha.
+        for (XWPFTableCell celula : tabela.getRow(0).getTableCells()) {
+            XWPFParagraph paragrafo = celula.getParagraphs().get(0);
+            paragrafo.setSpacingBefore(140);
+            paragrafo.setSpacingAfter(140);
+        }
+
+        for (XWPFRun run :
+                celulaStatus.getParagraphs().get(0).getRuns()) {
+            run.setColor(COR_VERDE);
+        }
+    }
+
+    private void adicionarData(
+            XWPFDocument documento,
+            PagamentoPaciente pagamento
+    ) {
+        LocalDate data = pagamento.getDtBaixaPagamento();
+
+        String dataExtenso = data == null
+                ? "Data não informada"
+                : data.format(FORMATO_EXTENSO);
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.RIGHT);
+        paragrafo.setSpacingBefore(600);
+        paragrafo.setSpacingAfter(0);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setText("São Paulo, " + dataExtenso);
+    }
+
+    private void adicionarAssinatura(XWPFDocument documento) {
+
+        XWPFParagraph linha = documento.createParagraph();
+
+        linha.setAlignment(ParagraphAlignment.CENTER);
+        linha.setSpacingBefore(1050);
+        linha.setSpacingAfter(0);
+
+        XWPFRun linhaRun = linha.createRun();
+
+        aplicarFontePadrao(linhaRun);
+        linhaRun.setText("_".repeat(46));
+
+        XWPFParagraph nome = documento.createParagraph();
+
+        nome.setAlignment(ParagraphAlignment.CENTER);
+        nome.setSpacingBefore(0);
+        nome.setSpacingAfter(40);
+
+        XWPFRun nomeRun = nome.createRun();
+
+        aplicarFontePadrao(nomeRun);
+        nomeRun.setText(ASSINATURA);
+
+        XWPFParagraph responsavel = documento.createParagraph();
+
+        responsavel.setAlignment(ParagraphAlignment.CENTER);
+        responsavel.setSpacingBefore(0);
+        responsavel.setSpacingAfter(0);
+
+        XWPFRun responsavelRun = responsavel.createRun();
+
+        aplicarFontePadrao(responsavelRun);
+        responsavelRun.setFontSize(9);
+        responsavelRun.setColor("666666");
+        responsavelRun.setText("Responsável pelo recebimento");
+    }
+
+    private XWPFTable criarTabela(
+            XWPFDocument documento,
+            int colunas
+    ) {
+        XWPFTable tabela = documento.createTable(1, colunas);
+
+        tabela.setTableAlignment(TableRowAlign.CENTER);
+        tabela.setWidth("100%");
+        tabela.setCellMargins(110, 120, 110, 120);
+
+        return tabela;
+    }
+
+    private void configurarBordas(
+            XWPFTable tabela,
+            String cor,
+            int espessura,
+            boolean divisoriasVerticais
+    ) {
+        XWPFTable.XWPFBorderType borda =
+                XWPFTable.XWPFBorderType.SINGLE;
+
+        tabela.setTopBorder(borda, espessura, 0, cor);
+        tabela.setBottomBorder(borda, espessura, 0, cor);
+        tabela.setLeftBorder(borda, espessura, 0, cor);
+        tabela.setRightBorder(borda, espessura, 0, cor);
+        tabela.setInsideHBorder(borda, espessura, 0, cor);
+
+        if (divisoriasVerticais) {
+            tabela.setInsideVBorder(borda, espessura, 0, cor);
+        } else {
+            tabela.removeInsideVBorder();
+        }
+    }
+
+    private XWPFParagraph obterParagrafo(XWPFTableCell celula) {
+
+        XWPFParagraph paragrafo =
+                celula.getParagraphs().get(0);
+
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(0);
+
+        return paragrafo;
+    }
+
+    private void configurarTabulacao(
+            XWPFParagraph paragrafo,
+            int posicaoTwips,
+            STTabJc.Enum alinhamento
+    ) {
+        CTPPr propriedades = paragrafo.getCTP().getPPr();
+
+        if (propriedades == null) {
+            propriedades = paragrafo.getCTP().addNewPPr();
+        }
+
+        CTTabs tabs = propriedades.getTabs();
+
+        if (tabs == null) {
+            tabs = propriedades.addNewTabs();
+        }
+
+        CTTabStop tabulacao = tabs.addNewTab();
+
+        tabulacao.setVal(alinhamento);
+        tabulacao.setPos(BigInteger.valueOf(posicaoTwips));
+    }
+
+    private int larguraConteudoPagina(
+            TipoPapelDocumento tipoPapel
+    ) {
+        return layoutConfig.larguraPaginaTwips(tipoPapel)
+                - layoutConfig.margemEsquerdaTwips()
+                - layoutConfig.margemDireitaTwips();
+    }
+
+    private int larguraTabDireita(
+            TipoPapelDocumento tipoPapel
+    ) {
+        return larguraConteudoPagina(tipoPapel) - 450;
+    }
+
+    private void definirLarguraCelula(
+            XWPFTableCell celula,
+            int larguraTwips
+    ) {
+        CTTcPr propriedades = celula.getCTTc().getTcPr();
+
+        if (propriedades == null) {
+            propriedades = celula.getCTTc().addNewTcPr();
+        }
+
+        CTTblWidth largura = propriedades.getTcW();
+
+        if (largura == null) {
+            largura = propriedades.addNewTcW();
+        }
+
+        largura.setType(STTblWidth.DXA);
+        largura.setW(BigInteger.valueOf(larguraTwips));
+    }
+
+    private void aplicarFundoLinha(
+            XWPFTableRow linha,
+            String cor
+    ) {
+        for (XWPFTableCell celula : linha.getTableCells()) {
+            celula.setColor(cor);
+        }
+    }
+
+    private void adicionarTextoCelula(
+            XWPFTableCell celula,
+            String texto,
+            boolean negrito,
+            ParagraphAlignment alinhamento
+    ) {
+        XWPFParagraph paragrafo = obterParagrafo(celula);
+
+        paragrafo.setAlignment(alinhamento);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setBold(negrito);
+        run.setText(texto == null ? "" : texto);
+    }
+
+    private void adicionarSubtitulo(
+            XWPFDocument documento,
+            String texto
+    ) {
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.LEFT);
+        paragrafo.setSpacingBefore(160);
+        paragrafo.setSpacingAfter(160);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setBold(true);
+        run.setText(texto);
+    }
+
+    private void adicionarTrecho(
+            XWPFParagraph paragrafo,
+            String texto,
+            boolean negrito
+    ) {
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setBold(negrito);
+        run.setText(texto == null ? "" : texto);
+    }
+
+    private void espacamento(
+            XWPFDocument documento,
+            int espacoDepois
+    ) {
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(espacoDepois);
+    }
+
+    private String obterNomePaciente(PagamentoPaciente pagamento) {
+
+        Paciente paciente = pagamento.getPaciente();
+
+        if (
+                paciente == null
+                || paciente.getNomeCompleto() == null
+                || paciente.getNomeCompleto().isBlank()
+        ) {
+            return "Não informado";
+        }
+
+        return paciente.getNomeCompleto();
+    }
+
+    private String obterCpfPaciente(PagamentoPaciente pagamento) {
+
+        Paciente paciente = pagamento.getPaciente();
+
+        if (paciente == null
+                || paciente.getCpf() == null
+                || paciente.getCpf().isBlank()) {
+            return "Não informado";
+        }
+
+        String cpf = paciente.getCpf().trim();
+        String digitos = cpf.replaceAll("\\D", "");
+
+        if (digitos.length() == 11) {
+            return digitos.substring(0, 3) + "."
+                    + digitos.substring(3, 6) + "."
+                    + digitos.substring(6, 9) + "-"
+                    + digitos.substring(9);
+        }
+
+        return cpf;
+    }
+
+    private BigDecimal calcularValorTotal(
+            PagamentoPaciente pagamento
+    ) {
+        BigDecimal valor = pagamento.getValorSessao();
+        Integer quantidade = pagamento.getQuantidadeSessao();
+
+        if (valor == null || quantidade == null) {
+            return null;
+        }
+
+        return valor.multiply(BigDecimal.valueOf(quantidade));
+    }
+
+    private String formatarTipoPagamento(
+            PagamentoPaciente pagamento
+    ) {
+        if (pagamento.getTipoDePagamento() == null) {
+            return "Não informado";
+        }
+
+        return switch (pagamento.getTipoDePagamento()) {
+            case AVULSO -> "Avulso";
+            case MENSAL -> "Mensal";
+        };
+    }
+
+    private String formatarData(LocalDate data) {
+        return data == null
+                ? "Não informada"
+                : data.format(FORMATO_DATA);
+    }
+
+    private String formatarMoeda(BigDecimal valor) {
+        return valor == null
+                ? "Não informado"
+                : NumberFormat.getCurrencyInstance(
+                        LOCALE_BRASIL
+                ).format(valor);
+    }
+
+    private void aplicarFontePadrao(XWPFRun run) {
+        run.setFontFamily(layoutConfig.fonteTexto());
+        run.setFontSize(TAMANHO_FONTE_PADRAO);
+    }
+}

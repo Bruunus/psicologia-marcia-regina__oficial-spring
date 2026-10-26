@@ -331,7 +331,7 @@ public class DeclaracaoComparecimentoWordService {
         aplicarFonteTexto(assinaturaRun);
         assinaturaRun.setItalic(false);
         assinaturaRun.setBold(false);
-        assinaturaRun.setText("CLINICA PSICOTERAPÊUTICA REFLORESCER LTDA.");
+        assinaturaRun.setText("MARCIA REGINA - PSICÓLOGA E NEUROPSICÓLOGA");
     }
 
     private void adicionarEspaco(XWPFDocument documento, int quantidadeLinhas) {

@@ -354,7 +354,7 @@ public class DocumentoHistoricoAtendimentoService {
 
     private void aplicarFontePadrao(XWPFRun run) {
         run.setFontFamily(FONTE_TEXTO);
-        run.setFontSize(10);
+        run.setFontSize(11);
     }
 
     private void adicionarTextoComQuebras(XWPFRun run, String texto) {

@@ -1,0 +1,383 @@
+
+package br.com.psicologia.marcia.service.queixa;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
+import javax.imageio.ImageIO;
+
+import org.apache.poi.xwpf.usermodel.Document;
+import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.apache.poi.xwpf.usermodel.XWPFRun;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import br.com.psicologia.marcia.DTO.queixa.QueixaDownloadRequest;
+import br.com.psicologia.marcia.model.Paciente;
+import br.com.psicologia.marcia.model.Queixa;
+import br.com.psicologia.marcia.model.enums.TipoPapelDocumento;
+import br.com.psicologia.marcia.repository.paciente.cadastro.QueixaRepository;
+import br.com.psicologia.marcia.service.documento.ConfiguracaoDocumento;
+import br.com.psicologia.marcia.service.documento.DocumentoLayoutConfig;
+
+@Service
+public class QueixaWordService {
+
+    private static final int TAMANHO_FONTE_PADRAO = 11;
+    private static final int TAMANHO_FONTE_TITULO = 14;
+
+    private static final double ESPACAMENTO_ENTRE_LINHAS = 1.15;
+
+    private static final String CAMINHO_LOGO =
+            "documentos/imagens/logo-completo.png";
+
+    private static final String NOME_CLINICA =
+            "MARCIA REGINA - PSICÓLOGA E NEUROPSICÓLOGA";
+
+    private static final DateTimeFormatter FORMATO_DATA =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private static final DateTimeFormatter FORMATO_DATA_EXTENSO =
+            DateTimeFormatter.ofPattern(
+                    "d 'de' MMMM 'de' yyyy",
+                    Locale.forLanguageTag("pt-BR")
+            );
+
+    private final QueixaRepository queixaRepository;
+    private final ConfiguracaoDocumento configuracaoDocumento;
+    private final DocumentoLayoutConfig layoutConfig;
+
+    public QueixaWordService(
+            QueixaRepository queixaRepository,
+            ConfiguracaoDocumento configuracaoDocumento,
+            DocumentoLayoutConfig layoutConfig
+    ) {
+        this.queixaRepository = queixaRepository;
+        this.configuracaoDocumento = configuracaoDocumento;
+        this.layoutConfig = layoutConfig;
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] gerarWord(QueixaDownloadRequest request) {
+
+        if (request == null || request.queixaId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O ID da queixa é obrigatório."
+            );
+        }
+
+        TipoPapelDocumento tipoPapel =
+                validarTipoPapel(request.tipoPapel());
+
+        Queixa queixa = queixaRepository
+                .findById(request.queixaId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Queixa não encontrada."
+                ));
+
+        Paciente paciente = queixa.getPaciente();
+
+        if (paciente == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Paciente vinculado à queixa não encontrado."
+            );
+        }
+
+        try (
+                XWPFDocument documento = new XWPFDocument();
+                ByteArrayOutputStream saida = new ByteArrayOutputStream()
+        ) {
+            configuracaoDocumento.configurar(documento, tipoPapel);
+
+            adicionarLogotipo(documento);
+            adicionarTitulo(documento);
+            adicionarIdentificacao(documento, paciente);
+            adicionarConteudo(documento, queixa.getQueixa());
+            adicionarDataEmissao(documento, paciente);
+            adicionarAssinatura(documento);
+
+            documento.write(saida);
+
+            return saida.toByteArray();
+
+        } catch (ResponseStatusException exception) {
+            throw exception;
+
+        } catch (Exception exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Não foi possível gerar o Word da queixa.",
+                    exception
+            );
+        }
+    }
+
+    private TipoPapelDocumento validarTipoPapel(String valor) {
+
+        if (valor == null || valor.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O tipo de papel é obrigatório."
+            );
+        }
+
+        try {
+            return configuracaoDocumento.normalizarTipoPapel(
+                    TipoPapelDocumento.valueOf(
+                            valor.trim().toUpperCase(Locale.ROOT)
+                    )
+            );
+
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tipo de papel inválido. Use A4 ou CARTA."
+            );
+        }
+    }
+
+    private void adicionarLogotipo(XWPFDocument documento)
+            throws Exception {
+
+        ClassPathResource recurso =
+                new ClassPathResource(CAMINHO_LOGO);
+
+        if (!recurso.exists()) {
+            throw new IllegalStateException(
+                    "Logotipo não encontrado: " + CAMINHO_LOGO
+            );
+        }
+
+        BufferedImage imagem;
+
+        try (InputStream leitura = recurso.getInputStream()) {
+            imagem = ImageIO.read(leitura);
+        }
+
+        if (imagem == null) {
+            throw new IllegalStateException(
+                    "Não foi possível interpretar o logotipo."
+            );
+        }
+
+        double larguraCm = 4.0;
+
+        double alturaCm = larguraCm
+                * imagem.getHeight()
+                / imagem.getWidth();
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.CENTER);
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(940);
+
+        XWPFRun run = paragrafo.createRun();
+
+        try (InputStream dados = recurso.getInputStream()) {
+            run.addPicture(
+                    dados,
+                    Document.PICTURE_TYPE_PNG,
+                    "logo-completo.png",
+                    layoutConfig.centimetrosParaEmu(larguraCm),
+                    layoutConfig.centimetrosParaEmu(alturaCm)
+            );
+        }
+    }
+
+    private void adicionarTitulo(XWPFDocument documento) {
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.CENTER);
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(700);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setFontSize(TAMANHO_FONTE_TITULO);
+        run.setBold(true);
+        run.setText("Queixa");
+    }
+
+    private void adicionarIdentificacao(
+            XWPFDocument documento,
+            Paciente paciente
+    ) {
+        adicionarLinhaIdentificacao(
+                documento,
+                "Paciente: ",
+                paciente.getNomeCompleto()
+        );
+
+        String dataCadastro =
+                paciente.getDataCadastro() == null
+                        ? "Não informada"
+                        : paciente.getDataCadastro().format(
+                                FORMATO_DATA
+                        );
+
+        adicionarLinhaIdentificacao(
+                documento,
+                "Data do registro: ",
+                dataCadastro
+        );
+    }
+
+    private void adicionarLinhaIdentificacao(
+            XWPFDocument documento,
+            String rotulo,
+            String valor
+    ) {
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.LEFT);
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(120);
+
+        XWPFRun rotuloRun = paragrafo.createRun();
+
+        aplicarFontePadrao(rotuloRun);
+        rotuloRun.setBold(true);
+        rotuloRun.setText(rotulo);
+
+        XWPFRun valorRun = paragrafo.createRun();
+
+        aplicarFontePadrao(valorRun);
+        valorRun.setText(valor == null ? "" : valor);
+    }
+
+    private void adicionarConteudo(
+            XWPFDocument documento,
+            String conteudo
+    ) {
+
+        XWPFParagraph titulo = documento.createParagraph();
+
+        titulo.setAlignment(ParagraphAlignment.LEFT);
+        titulo.setSpacingBefore(560);
+        titulo.setSpacingAfter(250);
+
+        XWPFRun tituloRun = titulo.createRun();
+
+        aplicarFontePadrao(tituloRun);
+        tituloRun.setBold(true);
+        tituloRun.setText("Descrição da queixa");
+
+        String texto = conteudo == null ? "" : conteudo;
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.BOTH);
+
+        paragrafo.setIndentationFirstLine(
+                layoutConfig.recuoPrimeiraLinhaCorpoTwips()
+        );
+
+        paragrafo.setSpacingBetween(
+                ESPACAMENTO_ENTRE_LINHAS
+        );
+
+        paragrafo.setSpacingBefore(0);
+        paragrafo.setSpacingAfter(200);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        adicionarTextoComQuebras(run, texto);
+    }
+
+    private void adicionarDataEmissao(
+            XWPFDocument documento,
+            Paciente paciente
+    ) {
+
+        LocalDate data = paciente.getDataCadastro();
+
+        String dataFormatada = data == null
+                ? "Data não informada"
+                : data.format(FORMATO_DATA_EXTENSO);
+
+        XWPFParagraph paragrafo = documento.createParagraph();
+
+        paragrafo.setAlignment(ParagraphAlignment.RIGHT);
+        paragrafo.setSpacingBefore(900);
+        paragrafo.setSpacingAfter(0);
+
+        XWPFRun run = paragrafo.createRun();
+
+        aplicarFontePadrao(run);
+        run.setText("São Paulo, " + dataFormatada);
+    }
+
+    private void adicionarAssinatura(XWPFDocument documento) {
+
+        XWPFParagraph linha = documento.createParagraph();
+
+        linha.setAlignment(ParagraphAlignment.CENTER);
+        linha.setSpacingBefore(1350);
+        linha.setSpacingAfter(0);
+
+        XWPFRun linhaRun = linha.createRun();
+
+        aplicarFontePadrao(linhaRun);
+        linhaRun.setText(
+                "______________________________________________"
+        );
+
+        XWPFParagraph nome = documento.createParagraph();
+
+        nome.setAlignment(ParagraphAlignment.CENTER);
+        nome.setSpacingBefore(0);
+        nome.setSpacingAfter(0);
+
+        XWPFRun nomeRun = nome.createRun();
+
+        aplicarFontePadrao(nomeRun);
+        nomeRun.setText(NOME_CLINICA);
+    }
+
+    // Mesmo padrão de aplicação de fonte do Laudo.
+    private void aplicarFontePadrao(XWPFRun run) {
+
+        run.setFontFamily(
+                layoutConfig.fonteTexto()
+        );
+
+        run.setFontSize(
+                TAMANHO_FONTE_PADRAO
+        );
+    }
+
+    private void adicionarTextoComQuebras(
+            XWPFRun run,
+            String texto
+    ) {
+
+        String[] linhas = texto.split("\\R", -1);
+
+        for (int i = 0; i < linhas.length; i++) {
+
+            if (i > 0) {
+                run.addBreak();
+            }
+
+            run.setText(linhas[i]);
+        }
+    }
+}

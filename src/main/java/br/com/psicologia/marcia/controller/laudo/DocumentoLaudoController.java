@@ -1,10 +1,10 @@
+
 package br.com.psicologia.marcia.controller.laudo;
 
 import java.text.Normalizer;
 import java.util.List;
 
 import org.springframework.http.CacheControl;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,12 +21,8 @@ import br.com.psicologia.marcia.DTO.laudo.LaudoListaResponse;
 import br.com.psicologia.marcia.DTO.laudo.LaudoPacienteRequest;
 import br.com.psicologia.marcia.DTO.laudo.LaudoResponse;
 import br.com.psicologia.marcia.DTO.laudo.LaudoSalvarRequest;
-import br.com.psicologia.marcia.DTO.laudo.LaudoVisualizarRequest;
-import br.com.psicologia.marcia.DTO.laudo.PdfLaudoGeradoDTO;
 import br.com.psicologia.marcia.service.laudo.DocumentoLaudoService;
 import br.com.psicologia.marcia.service.laudo.LaudoService;
-import br.com.psicologia.marcia.service.laudo.PdfLaudoService;
-
 
 @RestController
 @RequestMapping("/api/laudos")
@@ -35,18 +31,13 @@ public class DocumentoLaudoController {
     private static final String DOCX_CONTENT_TYPE =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-
     private final LaudoService laudoService;
 
     private final DocumentoLaudoService documentoLaudoService;
 
-    private final PdfLaudoService pdfLaudoService;
-
-
     public DocumentoLaudoController(
         LaudoService laudoService,
-        DocumentoLaudoService documentoLaudoService,
-        PdfLaudoService pdfLaudoService
+        DocumentoLaudoService documentoLaudoService
     ) {
 
         this.laudoService =
@@ -54,11 +45,7 @@ public class DocumentoLaudoController {
 
         this.documentoLaudoService =
             documentoLaudoService;
-
-        this.pdfLaudoService =
-            pdfLaudoService;
     }
-
 
     /*
      * ============================================================
@@ -76,7 +63,6 @@ public class DocumentoLaudoController {
                 request
             );
 
-
         return ResponseEntity
             .status(
                 HttpStatus.CREATED
@@ -85,7 +71,6 @@ public class DocumentoLaudoController {
                 response
             );
     }
-
 
     /*
      * ============================================================
@@ -103,12 +88,10 @@ public class DocumentoLaudoController {
                 request.pacienteId()
             );
 
-
         return ResponseEntity.ok(
             laudos
         );
     }
-
 
     /*
      * ============================================================
@@ -125,53 +108,10 @@ public class DocumentoLaudoController {
             request.laudoId()
         );
 
-
         return ResponseEntity
             .noContent()
             .build();
     }
-
-
-    /*
-     * ============================================================
-     * VISUALIZAR PDF
-     * ============================================================
-     */
-
-    @PostMapping(
-        value = "/visualizar",
-        produces = MediaType.APPLICATION_PDF_VALUE
-    )
-    public ResponseEntity<byte[]> visualizar(
-        @RequestBody LaudoVisualizarRequest request
-    ) {
-
-        PdfLaudoGeradoDTO pdfGerado =
-            pdfLaudoService.gerarPdf(
-                request
-            );
-
-
-        return ResponseEntity
-            .ok()
-            .contentType(
-                MediaType.APPLICATION_PDF
-            )
-            .header(
-                HttpHeaders.CONTENT_DISPOSITION,
-                ContentDisposition
-                    .inline()
-                    .filename(
-                        pdfGerado.nomeArquivo()
-                    )
-                    .build()
-                    .toString()
-            )
-            .body(
-                pdfGerado.documento()
-            );
-    }
-
 
     /*
      * ============================================================
@@ -193,23 +133,19 @@ public class DocumentoLaudoController {
                     request
                 );
 
-
         String nomeArquivoSeguro =
             normalizarNomeArquivo(
                 documentoGerado.nomeArquivo()
             );
 
-
         HttpHeaders headers =
             new HttpHeaders();
-
 
         headers.setContentType(
             MediaType.parseMediaType(
                 DOCX_CONTENT_TYPE
             )
         );
-
 
         headers.set(
             HttpHeaders.CONTENT_DISPOSITION,
@@ -220,18 +156,15 @@ public class DocumentoLaudoController {
                 "\""
         );
 
-
         headers.set(
             HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
             HttpHeaders.CONTENT_DISPOSITION
         );
 
-
         headers.set(
             "X-Content-Type-Options",
             "nosniff"
         );
-
 
         headers.setCacheControl(
             CacheControl
@@ -239,11 +172,9 @@ public class DocumentoLaudoController {
                 .mustRevalidate()
         );
 
-
         headers.setPragma(
             "no-cache"
         );
-
 
         headers.setContentLength(
             documentoGerado
@@ -251,14 +182,12 @@ public class DocumentoLaudoController {
                 .length
         );
 
-
         return new ResponseEntity<>(
             documentoGerado.arquivo(),
             headers,
             HttpStatus.OK
         );
     }
-
 
     /*
      * ============================================================
@@ -279,7 +208,6 @@ public class DocumentoLaudoController {
             return "Laudo-Neuropsicologico.docx";
         }
 
-
         String nomeSemAcentos =
             Normalizer
                 .normalize(
@@ -290,7 +218,6 @@ public class DocumentoLaudoController {
                     "\\p{M}",
                     ""
                 );
-
 
         String nomeSeguro =
             nomeSemAcentos
@@ -307,7 +234,6 @@ public class DocumentoLaudoController {
                     ""
                 );
 
-
         while (
             nomeSeguro
                 .toLowerCase()
@@ -323,7 +249,6 @@ public class DocumentoLaudoController {
                 );
         }
 
-
         if (
             !nomeSeguro
                 .toLowerCase()
@@ -335,7 +260,6 @@ public class DocumentoLaudoController {
             nomeSeguro +=
                 ".docx";
         }
-
 
         return nomeSeguro;
     }
