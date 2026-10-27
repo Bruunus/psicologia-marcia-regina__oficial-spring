@@ -3,96 +3,78 @@ package br.com.psicologia.marcia.security;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
- 
+
 /**
  * Serviço responsável por gerar e validar tokens JWT.
  */
 @Service
 public class TokenService {
 
-
-	@Value(value = "${api.security.token.secret}")
-	private String secret;
-	
+    @Value("${api.security.token.secret}")
+    private String secret;
 
     @Value("${jwt.expiracao}")
     private long expiracaoEmMillis;
 
     /**
-     * Gera um token JWT contendo o login como subject e tempo de expiração.
-     *
-     * @param login o login do usuário autenticado
-     * @return o token JWT gerado
+     * Gera um token com a duração configurada em jwt.expiracao,
+     * expressa em milissegundos.
      */
     public String gerarToken(String login) {
-    	
-        Date agora = new Date();
-//        Date expiracao = new Date(agora.getTime() + expiracaoEmMillis);
+        if (expiracaoEmMillis <= 0) {
+            throw new IllegalStateException(
+                    "jwt.expiracao deve ser maior que zero."
+            );
+        }
 
-        // Converte a chave secreta em bytes com codificação segura UTF-8
-        Key chaveAssinatura = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-
+        Instant agora = Instant.now();
+        Instant expiracao = agora.plusMillis(expiracaoEmMillis);
 
         return Jwts.builder()
                 .setSubject(login)
-                .setIssuedAt(agora)
-                .setExpiration(Date.from(dataExpiracao()))
-                .signWith(chaveAssinatura, SignatureAlgorithm.HS256)
+                .setIssuedAt(Date.from(agora))
+                .setExpiration(Date.from(expiracao))
+                .signWith(chaveAssinatura(), SignatureAlgorithm.HS256)
                 .compact();
     }
-	
-	/**
-     * Calcula a data de expiração do token com base em 2 horas a partir do horário atual.
-     *
-     * @return Instant - Data e hora de expiração do token
-     */
-	private Instant dataExpiracao() {
-		return LocalDateTime.now()
-				.plusHours(2)
-				.toInstant(ZoneOffset.of("-03:00"));
-	}
 
-	
-	/**
-     * Extrai o subject (login) de um token JWT e valida sua assinatura e expiração.
-     *
-     * @param tokenJWT o token recebido no cabeçalho Authorization
-     * @return o login do usuário (subject)
-     * @throws RuntimeException se o token for inválido ou estiver expirado
+    /**
+     * Valida a assinatura e a expiração antes de retornar o login.
+     * Tokens expirados continuam proibidos nas rotas protegidas.
      */
     public String getSubject(String tokenJWT) {
         try {
-            Key chaveAssinatura = Keys.hmacShaKeyFor(secret.getBytes());
-
-            return Jwts
-                    .parserBuilder()
-                    .setSigningKey(chaveAssinatura)
+            return Jwts.parserBuilder()
+                    .setSigningKey(chaveAssinatura())
                     .build()
                     .parseClaimsJws(tokenJWT)
                     .getBody()
                     .getSubject();
 
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            throw new RuntimeException("Token expirado!");
-        } catch (io.jsonwebtoken.JwtException e) {
-            throw new RuntimeException("Token inválido!");
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("Token expirado!", e);
+
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new RuntimeException("Token inválido!", e);
         }
     }
 
-    
-    
-  
-    
-	
-	
+    /**
+     * Usa a mesma codificação na geração e na validação.
+     */
+    private Key chaveAssinatura() {
+        return Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
+    }
 }
