@@ -14,37 +14,70 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.psicologia.marcia.model.AuditoriaDeSessaoDeUsuario;
 
 @Repository
-public interface AuditoriaDeSessaoDeUsuarioRepository extends JpaRepository<AuditoriaDeSessaoDeUsuario, Long> {
+public interface AuditoriaDeSessaoDeUsuarioRepository
+        extends JpaRepository<AuditoriaDeSessaoDeUsuario, Long> {
 
-	/**
-     * Retorna a última sessão ativa do usuário (status = 'ATIVA').
+    /**
+     * Retorna a última sessão ativa do usuário.
      */
-    Optional<AuditoriaDeSessaoDeUsuario> findTopByLoginAndStatusOrderByDataLoginDesc(String login, String status);
+    Optional<AuditoriaDeSessaoDeUsuario>
+            findTopByLoginAndStatusOrderByDataLoginDesc(
+                    String login,
+                    String status
+            );
 
     /**
      * Retorna todas as sessões de um usuário.
      */
-    List<AuditoriaDeSessaoDeUsuario> findAllByLoginOrderByDataLoginDesc(String login);
+    List<AuditoriaDeSessaoDeUsuario>
+            findAllByLoginOrderByDataLoginDesc(String login);
 
     /**
-     * Atualiza os dados de logout da última sessão ativa.
+     * Encerra todas as sessões ativas do login.
+     * Mantido para compatibilidade com chamadas existentes.
      */
     @Modifying
     @Transactional
     @Query("""
-        UPDATE AuditoriaDeSessaoDeUsuario s 
-        SET s.dataLogout = :logoutTime, s.status = 'ENCERRADA', s.motivoLogout = :motivo 
-        WHERE s.login = :login AND s.status = 'ATIVA'
-    """)
+        UPDATE AuditoriaDeSessaoDeUsuario s
+        SET s.dataLogout = :logoutTime,
+            s.status = 'ENCERRADA',
+            s.motivoLogout = :motivo
+        WHERE s.login = :login
+          AND s.status = 'ATIVA'
+        """)
     void encerrarSessaoAtiva(
-        @Param("login") String login,
-        @Param("logoutTime") LocalDateTime logoutTime,
-        @Param("motivo") String motivo
+            @Param("login") String login,
+            @Param("logoutTime") LocalDateTime logoutTime,
+            @Param("motivo") String motivo
     );
 
     /**
-     * Verifica se o usuário possui uma sessão ativa.
+     * Encerra somente a sessão identificada, se ainda estiver ativa
+     * e pertencer ao usuário informado.
+     *
+     * @return quantidade de registros encerrados: zero ou um.
+     */
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE AuditoriaDeSessaoDeUsuario s
+        SET s.dataLogout = :logoutTime,
+            s.status = 'ENCERRADA',
+            s.motivoLogout = :motivo
+        WHERE s.id = :sessaoId
+          AND s.login = :login
+          AND s.status = 'ATIVA'
+        """)
+    int encerrarSessaoPorId(
+            @Param("sessaoId") Long sessaoId,
+            @Param("login") String login,
+            @Param("logoutTime") LocalDateTime logoutTime,
+            @Param("motivo") String motivo
+    );
+
+    /**
+     * Verifica se o usuário possui alguma sessão ativa.
      */
     boolean existsByLoginAndStatus(String login, String status);
 }
-

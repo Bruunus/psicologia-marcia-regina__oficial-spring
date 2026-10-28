@@ -24,231 +24,250 @@ import br.com.psicologia.marcia.service.error.MessageError;
 @Service
 public class UsuarioService implements UserDetailsService {
 
-	@Autowired
-	private UsuarioRepository usuarioRepository;
-	
-	@Autowired
-    private AuditoriaDeSessaoDeUsuarioService auditoriaService;
-	
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-	
-	@Autowired
-	private TokenService tokenService;
-	
-	@Autowired
-	private MessageError messageError;
-	
-	private static Usuario usuario = new Usuario();
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-	private AccessUserManagerRecord login;
-	
-	 
-	public UsuarioService(UsuarioRepository userRepository) {
+    @Autowired
+    private AuditoriaDeSessaoDeUsuarioService auditoriaService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private MessageError messageError;
+
+    private static Usuario usuario = new Usuario();
+
+    private AccessUserManagerRecord login;
+
+    /**
+     * Motivos que podem ser informados pelo solicitante.
+     * A expiração é identificada pelo próprio backend.
+     */
+    public enum MotivoLogout {
+        LOGOUT_MANUAL,
+        INATIVIDADE
+    }
+
+    public UsuarioService(UsuarioRepository userRepository) {
         this.usuarioRepository = userRepository;
     }
-	 
 
- 
-	/**
-	 * Registra um novo usuário no sistema.
-	 * 
-	 * - Verifica se o login já está cadastrado.
-	 * - Criptografa o CPF e a senha antes de persistir os dados.
-	 * - Salva o novo usuário com as informações seguras no banco.
-	 *
-	 * @param user Objeto do tipo {@link Usuario} contendo os dados do novo usuário a ser registrado.
-	 * @return {@code true} se o login já existe (registro não efetuado), {@code false} se o registro foi realizado com sucesso.
-	 */
+    /**
+     * Registra um usuário com CPF e senha criptografados.
+     *
+     * @return true se o login já existe; false se foi cadastrado.
+     */
+    public boolean registrarUsuario(Usuario user) {
+        if (usuarioRepository.findBylogin(user.getUsername()) != null) {
+            return true;
+        }
 
-	public boolean registrarUsuario(Usuario user) {
+        if (user.getCpf() == null || user.getCpf().length() != 11) {
+            throw new IllegalArgumentException(
+                    "O CPF inválico para cadastro - verifique o valor."
+            );
+        }
 
-	    if (usuarioRepository.findBylogin(user.getUsername()) != null) {
-	        return true;
-	    }
- 
-	    if (user.getCpf() == null || user.getCpf().length() != 11) {
-	        throw new IllegalArgumentException("O CPF inválico para cadastro - verifique o valor.");
-	    }
+        String cpfCriptografado = passwordEncoder.encode(user.getCpf());
 
-	    // Criptografar CPF e senha
-	    String cpfCriptografado = passwordEncoder.encode(user.getCpf());
-	    user.setCpf(cpfCriptografado);
-	    user.setSenha(passwordEncoder.encode(user.getPassword()));
+        user.setCpf(cpfCriptografado);
+        user.setSenha(passwordEncoder.encode(user.getPassword()));
 
-	    usuarioRepository.save(user);
-	    return false;
-	}
+        usuarioRepository.save(user);
+        return false;
+    }
 
-	
-	
-	/**
-	 * Redefine a senha de um usuário com base no CPF informado.
-	 * 
-	 * - Percorre todos os usuários do sistema.
-	 * - Compara o CPF fornecido com os CPF's criptografados salvos no banco usando {@code passwordEncoder.matches}.
-	 * - Caso o CPF seja válido e as novas senhas coincidam, atualiza a senha do usuário.
-	 *
-	 * @param request Objeto do tipo {@link UsuarioRedefinirSenha} contendo CPF, nova senha e confirmação da senha.
-	 * @return {@code true} se a senha foi redefinida com sucesso, {@code false} se o CPF não foi encontrado ou as senhas não coincidem.
-	 */
+    /**
+     * Redefine a senha após conferir o CPF e a confirmação da senha.
+     */
+    public boolean redefinirSenhaPorCpf(UsuarioRedefinirSenha request) {
+        List<Usuario> usuarios = usuarioRepository.findAll();
 
-	public boolean redefinirSenhaPorCpf(UsuarioRedefinirSenha request) {
-	    List<Usuario> usuarios = usuarioRepository.findAll();
+        Optional<Usuario> optionalUsuario = usuarios.stream()
+                .filter(u -> passwordEncoder.matches(
+                        request.cpf(),
+                        u.getCpf()
+                ))
+                .findFirst();
 
-	    Optional<Usuario> optionalUsuario = usuarios.stream()
-	        .filter(u -> passwordEncoder.matches(request.cpf(), u.getCpf()))
-	        .findFirst();
+        if (optionalUsuario.isEmpty()) {
+            return false;
+        }
 
-	    if (optionalUsuario.isEmpty()) {
-	        return false;
-	    }
+        if (!request.novaSenha().equals(request.confirmacaoSenha())) {
+            return false;
+        }
 
-	    if (!request.novaSenha().equals(request.confirmacaoSenha())) {
-	        return false;
-	    }
+        Usuario usuario = optionalUsuario.get();
 
-	    Usuario usuario = optionalUsuario.get();
-	    usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
-	    usuarioRepository.save(usuario);
-	    return true;
-	}
-	
-	
-	
-	
+        usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
+        usuarioRepository.save(usuario);
 
+        return true;
+    }
 
+    /**
+     * Carrega os dados utilizados na autenticação do usuário.
+     */
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+        System.out.println("LOGIN RECEBIDO: " + username);
 
-	/**
-	 * Carrega os detalhes de um usuário com base no nome de usuário (login) fornecido.
-	 * 
-	 * - Registra o login recebido no log.
-	 * - Armazena temporariamente o login recebido na variável estática {@code UsuarioService.usuario}.
-	 * - Busca o usuário correspondente no repositório.
-	 * - Caso o usuário não seja encontrado, lança uma {@link UsernameNotFoundException} com uma mensagem descritiva.
-	 * - Se encontrado, retorna um objeto {@link UserDetails} com as credenciais do usuário.
-	 *
-	 * @param username O login do usuário a ser buscado.
-	 * @return Um objeto {@link UserDetails} contendo os dados do usuário autenticado.
-	 * @throws UsernameNotFoundException Se o usuário não for encontrado no banco de dados.
-	 */
+        UsuarioService.usuario.setLogin(username);
 
-	@Override
-	public UserDetails loadUserByUsername(String username) /*throws UsernameNotFoundException*/ {
-		
-		System.out.println("LOGIN RECEBIDO: " +username);
-		UsuarioService.usuario.setLogin(username);
-		
-		UserDetails findBylogin = usuarioRepository.findBylogin(username);
-		
-		if(findBylogin == null) {
-			System.out.println("Usuário inexistente (UserDetails)");
-			messageError.setMessage("usuario_inexiste");
-			throw new UsernameNotFoundException("Entrando em Exception -> HttpRequestMethodNotSupportedException: " + username);
-		 
-		} else {
-			return findBylogin;
-		}	
-	}
-	
-	
-	
-	
-	/**
-	 * Deleta um usuário com base no login e id fornecidos.
-	 *
-	 * @param login O login do usuário a ser deletado.
-	 * @param id    O ID do usuário a ser deletado.
-	 * @throws NoSuchElementException se o usuário não for encontrado.
-	 */
-	public void deletarUsuarioPorLoginEId(String login, Long id) {
-	    Optional<Usuario> usuarioOptional = usuarioRepository.findByLoginAndId(login, id);
+        UserDetails findBylogin =
+                usuarioRepository.findBylogin(username);
 
-	    if (usuarioOptional.isPresent()) {
-	        usuarioRepository.delete(usuarioOptional.get());
-	    } else {
-	        throw new NoSuchElementException("Usuário não encontrado com login: " + login + " e id: " + id);
-	    }
-	}
+        if (findBylogin == null) {
+            System.out.println("Usuário inexistente (UserDetails)");
+            messageError.setMessage("usuario_inexiste");
 
-	
-	
-	
-	/**
-	 * Verifica se existe um usuário com o login informado.
-	 *
-	 * @param login o login do usuário a ser verificado
-	 * @return true se o usuário NÃO existe, false se existe
-	 */
-	public boolean validacaoDeLogin(String login) {
-	    return !usuarioRepository.existsByLogin(login);
-	}
+            throw new UsernameNotFoundException(
+                    "Entrando em Exception -> "
+                    + "HttpRequestMethodNotSupportedException: "
+                    + username
+            );
+        }
 
-	
-	
-	
-	
-	
-	
-	
-	
-	 
+        return findBylogin;
+    }
 
-	/**
-	 * Processa o logout do usuário a partir do token JWT fornecido.
-	 *
-	 * @param tokenJWT Token JWT extraído do cabeçalho Authorization.
-	 * @return Mensagem de status indicando o resultado da operação.
-	 */
-	public String logout(String tokenJWT) {
-	    try {
-	        // Extrai o login do token
-	        String login = tokenService.getSubject(tokenJWT);
+    /**
+     * Deleta um usuário pelo login e ID.
+     */
+    public void deletarUsuarioPorLoginEId(String login, Long id) {
+        Optional<Usuario> usuarioOptional =
+                usuarioRepository.findByLoginAndId(login, id);
 
-	        // Verifica se o token é válido para o login fornecido
-	        if (!TokenStore.tokenValido(login, tokenJWT)) {
-	            return "Token inválido ou expirado.";
-	        }
+        if (usuarioOptional.isPresent()) {
+            usuarioRepository.delete(usuarioOptional.get());
+        } else {
+            throw new NoSuchElementException(
+                    "Usuário não encontrado com login: "
+                    + login + " e id: " + id
+            );
+        }
+    }
 
-	        // Remove o token da memória
-	        TokenStore.removerToken(login);
-	        System.out.println("Token removido da memória para o usuário: " + login);
+    /**
+     * @return true quando o login NÃO está cadastrado.
+     */
+    public boolean validacaoDeLogin(String login) {
+        return !usuarioRepository.existsByLogin(login);
+    }
 
-	        // Registra na auditoria
-	        auditoriaService.registrarLogout(login, "LOGOUT_MANUAL");
+    /**
+     * Mantém compatibilidade com chamadas que não informam motivo.
+     */
+    public String logout(String tokenJWT) {
+        return logout(tokenJWT, MotivoLogout.LOGOUT_MANUAL);
+    }
 
-	        return "Logout efetuado com sucesso.";
+    /**
+     * Encerra a sessão correspondente ao token recebido.
+     *
+     * Aceita token expirado apenas para logout, mantendo a validação
+     * da assinatura. A auditoria é encerrada pelo ID associado
+     * ao token, nunca pela sessão mais recente do usuário.
+     *
+     * INATIVIDADE é informada pelo frontend.
+     * TOKEN_EXPIRADO é determinado pelo backend e tem prioridade.
+     */
+    public String logout(
+            String tokenJWT,
+            MotivoLogout motivoSolicitado) {
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return "Erro ao processar logout: " + e.getMessage();
-	    }
-	}
-	
-	
-	
-	
+        final TokenService.DadosTokenLogout dadosToken;
 
+        try {
+            dadosToken = tokenService.getDadosParaLogout(tokenJWT);
 
+        } catch (IllegalArgumentException e) {
+            return "Token inválido.";
 
-	
-	AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(String login) {
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Erro interno ao validar token para logout.";
+        }
+
+        /*
+         * Usa o mesmo bloqueio do controller de login.
+         * Impede a criação de uma nova sessão por esse fluxo
+         * enquanto o encerramento atual está sendo processado.
+         */
+        synchronized (TokenStore.class) {
+            TokenStore.SessaoRegistrada sessao =
+                    TokenStore.obterSessao(
+                            dadosToken.login(),
+                            tokenJWT
+                    );
+
+            if (sessao == null) {
+                /*
+                 * O token já não corresponde a uma sessão registrada.
+                 * Não remove outro token nem altera outra auditoria.
+                 */
+                return "Logout efetuado com sucesso. "
+                        + "O token informado já não possui sessão ativa.";
+            }
+
+            if (sessao.auditoriaId() == null) {
+                return "Erro interno: sessão sem vínculo com a auditoria.";
+            }
+
+            MotivoLogout motivoRecebido = motivoSolicitado != null
+                    ? motivoSolicitado
+                    : MotivoLogout.LOGOUT_MANUAL;
+
+            String motivo = dadosToken.expirado()
+                    ? "TOKEN_EXPIRADO"
+                    : motivoRecebido.name();
+
+            try {
+                /*
+                 * Persiste o encerramento antes de remover o vínculo
+                 * em memória. Se o banco falhar, o vínculo permanece
+                 * disponível para uma nova tentativa de logout.
+                 *
+                 * Token vencido continua bloqueado nas rotas protegidas,
+                 * independentemente desta operação.
+                 */
+                auditoriaService.registrarLogoutDaSessao(
+                        sessao.auditoriaId(),
+                        dadosToken.login(),
+                        motivo
+                );
+
+                // Remove exclusivamente o token recebido.
+                TokenStore.removerToken(
+                        dadosToken.login(),
+                        tokenJWT
+                );
+
+                return "Logout efetuado com sucesso.";
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "Erro interno ao concluir logout.";
+            }
+        }
+    }
+
+    AccessUserManagerRecord conversorStringParaAccessUserManagerRecord(
+            String login) {
         return new AccessUserManagerRecord(login);
     }
 
-
-
-
-	/**
-     * Exclui um usuário com base no login e ID fornecidos.
-     *
-     * @param login Login do usuário.
-     * @param id    ID do usuário.
-     * @return true se o usuário foi excluído com sucesso, false se não foi encontrado.
+    /**
+     * Exclui um usuário pelo login e ID.
      */
     public boolean deletarUsuario(String login, Long id) {
-        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdAndLogin(id, login);
+        Optional<Usuario> usuarioOptional =
+                usuarioRepository.findByIdAndLogin(id, login);
 
         if (usuarioOptional.isPresent()) {
             usuarioRepository.delete(usuarioOptional.get());
@@ -257,13 +276,4 @@ public class UsuarioService implements UserDetailsService {
 
         return false;
     }
-	
-
-	 
-	
-	
-	 
-	
-
-    
 }
