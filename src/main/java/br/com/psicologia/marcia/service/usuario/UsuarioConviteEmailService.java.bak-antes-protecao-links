@@ -1,0 +1,325 @@
+package br.com.psicologia.marcia.service.usuario;
+
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import br.com.psicologia.marcia.model.ConviteUsuario;
+import br.com.psicologia.marcia.model.Usuario;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
+@Service
+public class UsuarioConviteEmailService {
+
+    private final ObjectProvider<JavaMailSender> javaMailSenderProvider;
+
+    @Value("${psicologia.marcia.frontend.url:http://localhost:4200}")
+    private String frontendUrl;
+
+    @Value("${psicologia.marcia.email.envio-real:false}")
+    private boolean envioReal;
+
+    @Value("${spring.mail.username:}")
+    private String remetente;
+
+    public UsuarioConviteEmailService(ObjectProvider<JavaMailSender> javaMailSenderProvider) {
+        this.javaMailSenderProvider = javaMailSenderProvider;
+    }
+
+    public String montarLinkConvite(String token) {
+        return UriComponentsBuilder
+            .fromHttpUrl(frontendUrl)
+            .path("/criar-senha")
+            .queryParam("token", token)
+            .toUriString();
+    }
+
+    public String montarLinkRedefinicaoSenha(String token) {
+        return UriComponentsBuilder
+            .fromHttpUrl(frontendUrl)
+            .path("/redefinir-senha")
+            .queryParam("token", token)
+            .toUriString();
+    }
+
+    public String enviarConvite(Usuario usuario, ConviteUsuario convite) {
+        String linkConvite = montarLinkConvite(convite.getToken());
+
+        if (!envioReal) {
+            imprimirConviteNoConsole(usuario, convite, linkConvite);
+            return linkConvite;
+        }
+
+        JavaMailSender javaMailSender = javaMailSenderProvider.getIfAvailable();
+
+        if (javaMailSender == null) {
+            throw new IllegalStateException("servico_de_email_nao_configurado");
+        }
+
+        try {
+            MimeMessage mensagem = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, "UTF-8");
+
+            if (remetente != null && !remetente.isBlank()) {
+                helper.setFrom(remetente);
+            }
+
+            helper.setTo(usuario.getEmail());
+            helper.setSubject("Convite de acesso - Psicologia Márcia");
+            helper.setText(
+                montarMensagemTexto(usuario, linkConvite),
+                montarMensagemHtml(usuario, linkConvite)
+            );
+
+            javaMailSender.send(mensagem);
+
+            return linkConvite;
+        } catch (MessagingException e) {
+            throw new IllegalStateException("erro_ao_montar_email_de_convite", e);
+        }
+    }
+
+    public String enviarRedefinicaoSenha(Usuario usuario, ConviteUsuario convite) {
+        String linkRedefinicao = montarLinkRedefinicaoSenha(convite.getToken());
+
+        if (!envioReal) {
+            imprimirRedefinicaoSenhaNoConsole(usuario, convite, linkRedefinicao);
+            return linkRedefinicao;
+        }
+
+        JavaMailSender javaMailSender = javaMailSenderProvider.getIfAvailable();
+
+        if (javaMailSender == null) {
+            throw new IllegalStateException("servico_de_email_nao_configurado");
+        }
+
+        try {
+            MimeMessage mensagem = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensagem, true, "UTF-8");
+
+            if (remetente != null && !remetente.isBlank()) {
+                helper.setFrom(remetente);
+            }
+
+            helper.setTo(usuario.getEmail());
+            helper.setSubject("Redefinição de senha - Psicologia Márcia");
+            helper.setText(
+                montarMensagemRedefinicaoTexto(usuario, linkRedefinicao),
+                montarMensagemRedefinicaoHtml(usuario, linkRedefinicao)
+            );
+
+            javaMailSender.send(mensagem);
+
+            return linkRedefinicao;
+        } catch (MessagingException e) {
+            throw new IllegalStateException("erro_ao_montar_email_de_redefinicao_senha", e);
+        }
+    }
+
+    private void imprimirConviteNoConsole(
+        Usuario usuario,
+        ConviteUsuario convite,
+        String linkConvite
+    ) {
+        System.out.println("==============================================");
+        System.out.println("CONVITE DE USUÁRIO - MODO DEV");
+        System.out.println("Login: " + usuario.getLogin());
+        System.out.println("E-mail: " + usuario.getEmail());
+        System.out.println("Link: " + linkConvite);
+        System.out.println("Expira em: " + convite.getExpiraEm());
+        System.out.println("==============================================");
+    }
+
+    private void imprimirRedefinicaoSenhaNoConsole(
+        Usuario usuario,
+        ConviteUsuario convite,
+        String linkRedefinicao
+    ) {
+        System.out.println("==============================================");
+        System.out.println("REDEFINIÇÃO DE SENHA - MODO DEV");
+        System.out.println("Login: " + usuario.getLogin());
+        System.out.println("E-mail: " + usuario.getEmail());
+        System.out.println("Link: " + linkRedefinicao);
+        System.out.println("Expira em: " + convite.getExpiraEm());
+        System.out.println("==============================================");
+    }
+
+    private String montarMensagemTexto(Usuario usuario, String linkConvite) {
+        return "Olá, " + usuario.getLogin() + ".\n\n"
+            + "Seu acesso ao Psicologia Márcia foi criado.\n\n"
+            + "Clique no link abaixo para cadastrar sua senha:\n\n"
+            + linkConvite + "\n\n"
+            + "Este convite expira em 30 minutos.\n\n"
+            + "Se você não solicitou este acesso, ignore este e-mail.";
+    }
+
+    private String montarMensagemRedefinicaoTexto(Usuario usuario, String linkRedefinicao) {
+        return "Olá, " + usuario.getLogin() + ".\n\n"
+            + "Recebemos uma solicitação para redefinir sua senha de acesso ao Psicologia Márcia.\n\n"
+            + "Clique no link abaixo para criar uma nova senha:\n\n"
+            + linkRedefinicao + "\n\n"
+            + "Este link expira em 30 minutos.\n\n"
+            + "Se você não solicitou esta alteração, ignore este e-mail.";
+    }
+
+    private String montarMensagemHtml(Usuario usuario, String linkConvite) {
+        return """
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Convite de acesso - Psicologia Márcia</title>
+            </head>
+            <body style="margin:0;padding:0;background-color:#f5f6f8;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8;padding:32px 16px;">
+                    <tr>
+                        <td align="center">
+                            <table width="100%%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#fff;border:1px solid #e1e5ea;border-radius:14px;overflow:hidden;">
+                                <tr>
+                                    <td style="background-color:#0f4c81;padding:22px 28px;text-align:center;">
+                                        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">
+                                            Psicologia Márcia
+                                        </h1>
+                                        <p style="margin:6px 0 0 0;color:#dbeafe;font-size:14px;">
+                                            Convite de acesso ao sistema
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:30px 28px;">
+                                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.5;">
+                                            Olá, <strong>%s</strong>.
+                                        </p>
+
+                                        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#374151;">
+                                            Seu acesso ao <strong>Psicologia Márcia</strong> foi criado.
+                                        </p>
+
+                                        <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#374151;">
+                                            Clique no botão abaixo para cadastrar sua senha de acesso.
+                                        </p>
+
+                                        <div style="text-align:center;margin:28px 0;">
+                                            <a href="%s" style="display:inline-block;background-color:#0f4c81;color:#fff;text-decoration:none;padding:13px 24px;border-radius:8px;font-size:15px;font-weight:700;">
+                                                Cadastrar minha senha
+                                            </a>
+                                        </div>
+
+                                        <p style="margin:22px 0 0 0;font-size:14px;line-height:1.6;color:#6b7280;">
+                                            Este convite expira em <strong>30 minutos</strong>.
+                                        </p>
+
+                                        <p style="margin:14px 0 0 0;font-size:13px;line-height:1.6;color:#6b7280;">
+                                            Se você não solicitou este acesso, ignore este e-mail.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e1e5ea;text-align:center;">
+                                        <p style="margin:0;font-size:12px;color:#6b7280;">
+                                            Esta é uma mensagem automática. Não responda este e-mail.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+            """.formatted(
+                escaparHtml(usuario.getLogin()),
+                linkConvite
+            );
+    }
+
+    private String montarMensagemRedefinicaoHtml(Usuario usuario, String linkRedefinicao) {
+        return """
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Redefinição de senha - Psicologia Márcia</title>
+            </head>
+            <body style="margin:0;padding:0;background-color:#f5f6f8;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f8;padding:32px 16px;">
+                    <tr>
+                        <td align="center">
+                            <table width="100%%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#fff;border:1px solid #e1e5ea;border-radius:14px;overflow:hidden;">
+                                <tr>
+                                    <td style="background-color:#0f4c81;padding:22px 28px;text-align:center;">
+                                        <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">
+                                            Psicologia Márcia
+                                        </h1>
+                                        <p style="margin:6px 0 0 0;color:#dbeafe;font-size:14px;">
+                                            Redefinição de senha
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:30px 28px;">
+                                        <p style="margin:0 0 16px 0;font-size:16px;line-height:1.5;">
+                                            Olá, <strong>%s</strong>.
+                                        </p>
+
+                                        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#374151;">
+                                            Recebemos uma solicitação para redefinir sua senha de acesso ao <strong>Psicologia Márcia</strong>.
+                                        </p>
+
+                                        <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#374151;">
+                                            Clique no botão abaixo para criar uma nova senha.
+                                        </p>
+
+                                        <div style="text-align:center;margin:28px 0;">
+                                            <a href="%s" style="display:inline-block;background-color:#0f4c81;color:#fff;text-decoration:none;padding:13px 24px;border-radius:8px;font-size:15px;font-weight:700;">
+                                                Redefinir sua senha
+                                            </a>
+                                        </div>
+
+                                        <p style="margin:22px 0 0 0;font-size:14px;line-height:1.6;color:#6b7280;">
+                                            Este link expira em <strong>30 minutos</strong>.
+                                        </p>
+
+                                        <p style="margin:14px 0 0 0;font-size:13px;line-height:1.6;color:#6b7280;">
+                                            Se você não solicitou esta alteração, ignore este e-mail.
+                                        </p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e1e5ea;text-align:center;">
+                                        <p style="margin:0;font-size:12px;color:#6b7280;">
+                                            Esta é uma mensagem automática. Não responda este e-mail.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+            """.formatted(
+                escaparHtml(usuario.getLogin()),
+                linkRedefinicao
+            );
+    }
+
+    private String escaparHtml(String valor) {
+        if (valor == null) {
+            return "";
+        }
+
+        return valor
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
+    }
+}

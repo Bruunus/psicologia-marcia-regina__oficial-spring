@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import br.com.psicologia.marcia.model.enums.Role;
+import br.com.psicologia.marcia.model.enums.StatusUsuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,6 +36,13 @@ public class Usuario implements UserDetails {
 	
 	@Column(name = "cpf", nullable = false)
 	private String cpf;
+
+    @Column(name = "email", length = 120)
+    private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_usuario")
+    private StatusUsuario statusUsuario;
 
 
 	
@@ -75,7 +83,23 @@ public class Usuario implements UserDetails {
 		this.role = role;
 	}
 	
-	public String getCpf() {
+	public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public StatusUsuario getStatusUsuario() {
+        return statusUsuario;
+    }
+
+    public void setStatusUsuario(StatusUsuario statusUsuario) {
+        this.statusUsuario = statusUsuario;
+    }
+
+    public String getCpf() {
 		return cpf;
 	}
 
@@ -128,14 +152,15 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return statusUsuario == null
+                || statusUsuario == StatusUsuario.ATIVO;
     }
     
     
     @Override
     public String toString() {
     	// TODO Auto-generated method stub
-    	return "Login: "+this.login+" "+"Senha: "+this.senha;
+    	return "Login: " + this.login;
     }
 
 	

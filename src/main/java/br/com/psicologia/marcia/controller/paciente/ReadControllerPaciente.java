@@ -1,8 +1,9 @@
 package br.com.psicologia.marcia.controller.paciente;
 
-import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.atendimento.ConsultaDTOCarregamentoTelaHome;
 import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
+import br.com.psicologia.marcia.error.ApiErrorResponse;
 import br.com.psicologia.marcia.service.paciente.ReadPacienteService;
 
 @RestController
 @RequestMapping("/api/paciente")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ReadControllerPaciente {
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(ReadControllerPaciente.class);
 
     @Autowired
     private ReadPacienteService readPacienteService;
@@ -30,24 +35,23 @@ public class ReadControllerPaciente {
     public ResponseEntity<?> carregarDadosTelaHome() {
 
         try {
-            List<ConsultaDTOCarregamentoTelaHome> list =
+            List<ConsultaDTOCarregamentoTelaHome> lista =
                     readPacienteService.carregarTelaHome();
 
-            return ResponseEntity.ok(list);
+            return ResponseEntity.ok(lista);
 
         } catch (Exception e) {
-            System.err.println(
-                    "Erro ao carregar tela home: " + e.getMessage()
+
+            logger.error(
+                    "Falha ao carregar dados da tela inicial.",
+                    e
             );
 
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(
-                            Collections.singletonMap(
-                                    "message",
-                                    "Erro ao carregar dados da tela inicial"
-                            )
-                    );
+            return erro(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "erro_carregar_tela_home",
+                    "Não foi possível carregar os pacientes. Tente novamente."
+            );
         }
     }
 
@@ -62,30 +66,71 @@ public class ReadControllerPaciente {
     }
 
     @PostMapping("/carregar-dados")
-    public ResponseEntity<Object> getPacientes(
+    public ResponseEntity<?> getPacientes(
             @RequestBody String cpf
     ) {
+
+        if (cpf == null || cpf.isBlank()) {
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "cpf_obrigatorio",
+                    "Informe o CPF do paciente."
+            );
+        }
 
         try {
             PacienteRecord paciente =
                     readPacienteService.carregarPaciente(cpf);
 
             if (paciente == null) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+                return erro(
+                        HttpStatus.NOT_FOUND,
+                        "paciente_nao_encontrado",
+                        "Paciente não encontrado."
+                );
             }
 
-            return new ResponseEntity<>(
-                    paciente,
-                    HttpStatus.OK
+            return ResponseEntity.ok(paciente);
+
+        } catch (IllegalArgumentException e) {
+
+            return erro(
+                    HttpStatus.BAD_REQUEST,
+                    "dados_paciente_invalidos",
+                    "Os dados informados para consulta são inválidos."
             );
 
         } catch (Exception e) {
-            e.printStackTrace();
 
-            return new ResponseEntity<>(
-                    "Erro ao processar requisição. " + e,
-                    HttpStatus.BAD_REQUEST
+            logger.error(
+                    "Falha ao carregar dados do paciente.",
+                    e
+            );
+
+            return erro(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "erro_carregar_paciente",
+                    "Não foi possível carregar os dados do paciente."
             );
         }
+    }
+
+    private ResponseEntity<ApiErrorResponse> erro(
+            HttpStatus status,
+            String codigo,
+            String mensagem
+    ) {
+
+        return ResponseEntity
+                .status(status)
+                .body(
+                        ApiErrorResponse.criar(
+                                status,
+                                codigo,
+                                mensagem
+                        )
+                );
     }
 }

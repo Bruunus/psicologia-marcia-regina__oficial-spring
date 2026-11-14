@@ -1,0 +1,105 @@
+package br.com.psicologia.marcia.controller.usuario;
+
+import java.util.Collections;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.psicologia.marcia.DTO.usuario.UsuarioStatusRequest;
+import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.model.enums.StatusUsuario;
+import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+import br.com.psicologia.marcia.service.usuario.UsuarioAdministracaoService;
+
+@RestController
+@RequestMapping("/api/edit/user")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+public class ControllerUsuario {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UsuarioAdministracaoService usuarioAdministracaoService;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody Usuario user) {
+        return ResponseEntity
+                .status(HttpStatus.GONE)
+                .body("cadastro_direto_desativado_utilize_convite");
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/deletar")
+    public ResponseEntity<?> deletarUsuario(
+            @RequestBody Map<String, String> requestBody,
+            Authentication authentication
+    ) {
+        String login = requestBody.get("login");
+        String idInformado = requestBody.get("id");
+
+        if (login == null || login.isBlank()
+                || idInformado == null || idInformado.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap(
+                            "message",
+                            "login_e_id_obrigatorios"
+                    ));
+        }
+
+        Long id;
+
+        try {
+            id = Long.valueOf(idInformado);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap(
+                            "message",
+                            "id_usuario_invalido"
+                    ));
+        }
+
+        if (usuarioRepository.findByLoginAndId(login, id).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap(
+                            "message",
+                            "Usuário não encontrado"
+                    ));
+        }
+
+        UsuarioStatusRequest dados = new UsuarioStatusRequest();
+        dados.setStatusUsuario(StatusUsuario.INATIVO);
+
+        usuarioAdministracaoService.atualizarStatus(
+                id,
+                dados,
+                authentication.getName()
+        );
+
+        return ResponseEntity.ok(
+                Collections.singletonMap(
+                        "message",
+                        "Usuário inativado com sucesso"
+                )
+        );
+    }
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<?> redefinirSenha() {
+        return ResponseEntity
+                .status(HttpStatus.GONE)
+                .body(Collections.singletonMap(
+                        "message",
+                        "redefinicao_por_cpf_desativada_utilize_recuperacao_por_email"
+                ));
+    }
+}

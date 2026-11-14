@@ -1,9 +1,12 @@
 package br.com.psicologia.marcia.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +23,7 @@ import br.com.psicologia.marcia.service.usuario.UsuarioService;
  * Classe responsável pela configuração de segurança da aplicação.
  */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfigurations {
 
     private final TokenService tokenService;
@@ -53,11 +57,26 @@ public class SecurityConfigurations {
             TokenService tokenService,
             UsuarioService usuarioService,
             RequisicaoAnaliticaService requisicaoAnaliticaService,
-            SuporteAnalytics suporteAnalytics) throws Exception {
+            SuporteAnalytics suporteAnalytics,
+            JwtCookieService jwtCookieService,
+            @Value("${psicologia.marcia.auth.cookie-secure:false}")
+            boolean cookieSecure) throws Exception {
+
+        CookieCsrfTokenRepository csrfRepository =
+                CookieCsrfTokenRepository.withHttpOnlyFalse();
+
+        csrfRepository.setCookieCustomizer(cookie -> cookie
+                .path("/")
+                .secure(cookieSecure)
+                .sameSite("Lax"));
 
         return http
-                // Desabilita CSRF para API stateless com JWT
-                .csrf(csrf -> csrf.disable())
+                // Proteção CSRF para operações que alteram dados.
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfRepository)
+                        .csrfTokenRequestHandler(
+                                new SpaCsrfTokenRequestHandler()
+                        ))
 
                 // Mantido desabilitado por enquanto
                 .cors(cors -> cors.disable())
@@ -72,11 +91,21 @@ public class SecurityConfigurations {
 
                         // Libera chamadas públicas específicas da API
                         .requestMatchers(
+                                "/api/auth/csrf",
                                 "/api/auth/login",
                                 "/api/auth/deslogar",
                                 "/api/edit/user/redefinir-senha",
-                                "/api/edit/user/register"
+                                "/api/edit/user/register",
+                                "/api/usuarios/convites/validar-token",
+                                "/api/usuarios/convites/definir-senha",
+                                "/api/usuarios/redefinicoes-senha/validar-token",
+                                "/api/usuarios/redefinicoes-senha/confirmar"
                         ).permitAll()
+
+                        // Criacao de convites: somente administradores
+                        .requestMatchers(
+                                "/api/usuarios/convites"
+                        ).hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Qualquer outra rota precisa de autenticação
                         .anyRequest().authenticated()
@@ -88,7 +117,8 @@ public class SecurityConfigurations {
                                 tokenService,
                                 usuarioService,
                                 requisicaoAnaliticaService,
-                                suporteAnalytics
+                                suporteAnalytics,
+                                jwtCookieService
                         ),
                         UsernamePasswordAuthenticationFilter.class
                 )

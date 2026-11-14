@@ -55,6 +55,14 @@ public class TokenService {
      * Valida a assinatura e a expiração antes de retornar o login.
      * Tokens expirados continuam proibidos nas rotas protegidas.
      */
+    public long getExpiracaoEmMs(String tokenJWT) {
+        return Jwts.parserBuilder()
+                .setSigningKey(chaveAssinatura())
+                .build()
+                .parseClaimsJws(tokenJWT)
+                .getBody().getExpiration().getTime();
+    }
+
     public String getSubject(String tokenJWT) {
         try {
             return Jwts.parserBuilder()

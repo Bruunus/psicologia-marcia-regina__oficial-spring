@@ -1,0 +1,313 @@
+package br.com.psicologia.marcia.service.usuario;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.psicologia.marcia.DTO.usuario.RedefinirSenhaRequest;
+import br.com.psicologia.marcia.DTO.usuario.SolicitarRedefinicaoSenhaResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioPerfilRequest;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioResumoResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioStatusRequest;
+import br.com.psicologia.marcia.DTO.usuario.ValidarTokenConviteResponse;
+import br.com.psicologia.marcia.model.ConviteUsuario;
+import br.com.psicologia.marcia.model.enums.Role;
+import br.com.psicologia.marcia.model.enums.StatusUsuario;
+import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
+
+@Service
+public class UsuarioAdministracaoService {
+
+    private final UsuarioRepository usuarioRepository;
+    private final UsuarioConviteTokenService usuarioConviteTokenService;
+    private final UsuarioConviteEmailService usuarioConviteEmailService;
+    private final PasswordEncoder passwordEncoder;
+
+    public UsuarioAdministracaoService(
+        UsuarioRepository usuarioRepository,
+        UsuarioConviteTokenService usuarioConviteTokenService,
+        UsuarioConviteEmailService usuarioConviteEmailService,
+        PasswordEncoder passwordEncoder
+    ) {
+        this.usuarioRepository = usuarioRepository;
+        this.usuarioConviteTokenService = usuarioConviteTokenService;
+        this.usuarioConviteEmailService = usuarioConviteEmailService;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UsuarioResumoResponse> listarUsuarios() {
+        return usuarioRepository.findAllByOrderByLoginAsc()
+            .stream()
+            .map(UsuarioResumoResponse::fromEntity)
+            .toList();
+    }
+
+    @Transactional
+    public UsuarioResumoResponse atualizarStatus(
+        Long idUsuario,
+        UsuarioStatusRequest request,
+        String loginAdministradorAutenticado
+    ) {
+        StatusUsuario novoStatus = request.getStatusUsuario();
+
+        validarStatusPermitido(novoStatus);
+
+        Usuario usuario = buscarUsuarioPorId(idUsuario);
+
+        validarAutoInativacao(usuario, novoStatus, loginAdministradorAutenticado);
+
+        usuario.setStatusUsuario(novoStatus);
+
+        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
+
+        return UsuarioResumoResponse.fromEntity(usuarioAtualizado);
+    }
+
+    @Transactional
+    public UsuarioResumoResponse atualizarPerfil(
+        Long idUsuario,
+        UsuarioPerfilRequest request,
+        String loginAdministradorAutenticado
+    ) {
+        Role novoPerfil = normalizarRole(request.getRole());
+
+        Usuario usuario = buscarUsuarioPorId(idUsuario);
+
+        validarUsuarioParaAlteracaoDePerfil(usuario, loginAdministradorAutenticado);
+
+        usuario.setRole(novoPerfil);
+
+        Usuario usuarioAtualizado = usuarioRepository.save(usuario);
+
+        return UsuarioResumoResponse.fromEntity(usuarioAtualizado);
+    }
+
+    @Transactional
+    public SolicitarRedefinicaoSenhaResponse solicitarRedefinicaoSenha(Long idUsuario) {
+        Usuario usuario = buscarUsuarioPorId(idUsuario);
+
+        validarUsuarioParaRedefinicaoSenha(usuario);
+
+        ConviteUsuario convite = usuarioConviteTokenService.gerarNovoConvite(usuario);
+
+        String linkRedefinicaoDev = usuarioConviteEmailService.enviarRedefinicaoSenha(usuario, convite);
+
+        return new SolicitarRedefinicaoSenhaResponse(
+            "email_de_redefinicao_enviado_com_sucesso",
+            usuario.getLogin(),
+            usuario.getEmail(),
+            convite.getExpiraEm(),
+            linkRedefinicaoDev
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ValidarTokenConviteResponse validarTokenRedefinicaoSenha(String token) {
+        ConviteUsuario convite = buscarConviteValidoParaRedefinicao(token);
+        Usuario usuario = convite.getUsuario();
+
+        return new ValidarTokenConviteResponse(
+            true,
+            usuario.getLogin(),
+            usuario.getEmail(),
+            "token_redefinicao_valido"
+        );
+    }
+
+    @Transactional
+    public void confirmarRedefinicaoSenha(RedefinirSenhaRequest request) {
+        validarSenhasInformadas(request);
+
+        ConviteUsuario convite = buscarConviteValidoParaRedefinicao(request.getToken());
+        Usuario usuario = convite.getUsuario();
+
+        usuario.setSenha(passwordEncoder.encode(normalizarTexto(request.getSenha())));
+
+        usuarioRepository.save(usuario);
+        usuarioConviteTokenService.marcarComoUtilizado(convite);
+    }
+
+    private Usuario buscarUsuarioPorId(Long idUsuario) {
+        return usuarioRepository.findById(idUsuario)
+            .orElseThrow(() -> new UsuarioAdministracaoException(
+                HttpStatus.NOT_FOUND,
+                "usuario_nao_encontrado"
+            ));
+    }
+
+    private ConviteUsuario buscarConviteValidoParaRedefinicao(String token) {
+        String tokenNormalizado = normalizarTexto(token);
+
+        ConviteUsuario convite = usuarioConviteTokenService.buscarPorToken(tokenNormalizado)
+            .orElseThrow(() -> new UsuarioAdministracaoException(
+                HttpStatus.NOT_FOUND,
+                "token_redefinicao_nao_encontrado"
+            ));
+
+        if (!usuarioConviteTokenService.conviteEstaValido(convite)) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "token_redefinicao_expirado_ou_utilizado"
+            );
+        }
+
+        Usuario usuario = convite.getUsuario();
+
+        validarUsuarioAtivoParaUsoDoToken(usuario);
+
+        return convite;
+    }
+
+    private void validarSenhasInformadas(RedefinirSenhaRequest request) {
+        String senha = normalizarTexto(request.getSenha());
+        String confirmacaoSenha = normalizarTexto(request.getConfirmacaoSenha());
+
+        if (senha.isBlank()) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "senha_obrigatoria"
+            );
+        }
+
+        if (confirmacaoSenha.isBlank()) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "confirmacao_senha_obrigatoria"
+            );
+        }
+
+        if (!senha.equals(confirmacaoSenha)) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "senhas_nao_conferem"
+            );
+        }
+    }
+
+    private void validarStatusPermitido(StatusUsuario statusUsuario) {
+        if (statusUsuario == null) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "status_usuario_obrigatorio"
+            );
+        }
+
+        if (statusUsuario == StatusUsuario.PENDENTE_DE_SENHA) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "status_pendente_nao_permitido"
+            );
+        }
+    }
+
+    private void validarAutoInativacao(
+        Usuario usuario,
+        StatusUsuario novoStatus,
+        String loginAdministradorAutenticado
+    ) {
+        boolean ehMesmoUsuario = usuario.getLogin().equalsIgnoreCase(loginAdministradorAutenticado);
+        boolean estaInativando = novoStatus == StatusUsuario.INATIVO;
+
+        if (ehMesmoUsuario && estaInativando) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "nao_e_permitido_inativar_o_proprio_usuario"
+            );
+        }
+    }
+
+    private void validarUsuarioParaAlteracaoDePerfil(
+        Usuario usuario,
+        String loginAdministradorAutenticado
+    ) {
+        if (usuario.getLogin().equalsIgnoreCase(loginAdministradorAutenticado)) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "nao_e_permitido_alterar_o_proprio_perfil"
+            );
+        }
+
+        if (usuario.getStatusUsuario() == StatusUsuario.PENDENTE_DE_SENHA) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "usuario_pendente_de_senha_nao_permitido_para_alteracao_de_perfil"
+            );
+        }
+    }
+
+    private void validarUsuarioParaRedefinicaoSenha(Usuario usuario) {
+        if (usuario.getStatusUsuario() == StatusUsuario.INATIVO) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "Este usuário se encontra inativo,ative o usuário para esta ação."
+            );
+        }
+
+        if (usuario.getStatusUsuario() == StatusUsuario.PENDENTE_DE_SENHA) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "usuario_pendente_de_senha_nao_permitido_para_redefinicao"
+            );
+        }
+
+        if (usuario.getStatusUsuario() != StatusUsuario.ATIVO) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "status_usuario_invalido_para_redefinicao"
+            );
+        }
+
+        if (usuario.getEmail() == null || usuario.getEmail().isBlank()) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "usuario_sem_email_cadastrado"
+            );
+        }
+    }
+
+    private void validarUsuarioAtivoParaUsoDoToken(Usuario usuario) {
+        if (usuario.getStatusUsuario() == StatusUsuario.INATIVO) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "usuario_inativo_para_redefinicao"
+            );
+        }
+
+        if (usuario.getStatusUsuario() == StatusUsuario.PENDENTE_DE_SENHA) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "usuario_pendente_de_senha_nao_permitido_para_redefinicao"
+            );
+        }
+
+        if (usuario.getStatusUsuario() != StatusUsuario.ATIVO) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "status_usuario_invalido_para_redefinicao"
+            );
+        }
+    }
+
+    private String normalizarTexto(String valor) {
+        return valor == null ? "" : valor.trim();
+    }
+
+    private Role normalizarRole(String role) {
+        String valor = normalizarTexto(role).toUpperCase();
+
+        try {
+            return Role.valueOf(valor);
+        } catch (IllegalArgumentException e) {
+            throw new UsuarioAdministracaoException(
+                HttpStatus.BAD_REQUEST,
+                "perfil_invalido"
+            );
+        }
+    }
+
+}

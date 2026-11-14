@@ -1,10 +1,14 @@
 package br.com.psicologia.marcia.controller.login;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import br.com.psicologia.marcia.model.enums.Role;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.autenticacao.DadosTokenJWT;
 import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.security.JwtCookieService;
 import br.com.psicologia.marcia.security.TokenService;
 import br.com.psicologia.marcia.security.TokenStore;
 import br.com.psicologia.marcia.service.usuario.AuditoriaDeSessaoDeUsuarioService;
@@ -36,6 +41,9 @@ public class ControllerLogin {
     private TokenStore tokenStore;
 
     @Autowired
+    private JwtCookieService jwtCookieService;
+
+    @Autowired
     private AuditoriaDeSessaoDeUsuarioService auditoriaService;
 
     @Autowired
@@ -45,6 +53,9 @@ public class ControllerLogin {
      * Corpo opcional da solicitação de logout.
      */
     public record DadosLogout(String motivo) {
+    }
+
+    public record RespostaSessao(String login, Role role, long expiraEm) {
     }
 
     @PostMapping("/login")
@@ -86,6 +97,7 @@ public class ControllerLogin {
                 }
 
                 String token = tokenService.gerarToken(login);
+                String cookieJwt = jwtCookieService.montarCookie(token);
 
                 // Primeiro persiste a auditoria e obtém seu ID.
                 Long auditoriaId =
@@ -94,10 +106,16 @@ public class ControllerLogin {
                 // Registra o token junto à auditoria correspondente.
                 TokenStore.adicionarToken(login, token, auditoriaId);
 
-                return ResponseEntity.ok(
-                        new DadosTokenJWT(token, login, perfil)
-                );
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.SET_COOKIE, cookieJwt)
+                        .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                        .body(new RespostaSessao(login, perfil, tokenService.getExpiracaoEmMs(token)));
             }
+
+        } catch (DisabledException e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("usuario_inativo_ou_pendente");
 
         } catch (BadCredentialsException e) {
             return ResponseEntity
@@ -122,10 +140,17 @@ public class ControllerLogin {
      * Não renova o token nem altera o prazo de inatividade.
      */
     @PostMapping("/validar-sessao")
-    public ResponseEntity<Void> validarSessao() {
+    public ResponseEntity<RespostaSessao> validarSessao(
+            HttpServletRequest request, Authentication authentication) {
+        String token = jwtCookieService.lerToken(request);
+        if (token == null || authentication == null
+                || !(authentication.getPrincipal() instanceof Usuario usuario)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok()
                 .header("Cache-Control", "no-store")
-                .build();
+                .body(new RespostaSessao(usuario.getLogin(), usuario.getRole(),
+                        tokenService.getExpiracaoEmMs(token)));
     }
 
     /**
@@ -140,20 +165,12 @@ public class ControllerLogin {
             HttpServletRequest request,
             @RequestBody(required = false) DadosLogout dados) {
 
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body("Token não fornecido.");
-        }
-
-        String token = authHeader.substring(7).trim();
-
-        if (token.isEmpty()) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body("Token não fornecido.");
+        String token = jwtCookieService.lerToken(request);
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(org.springframework.http.HttpHeaders.SET_COOKIE,
+                            jwtCookieService.montarCookieRemocao())
+                    .body("Cookie de sessão ausente.");
         }
 
         MotivoLogout motivo = MotivoLogout.LOGOUT_MANUAL;
@@ -175,13 +192,23 @@ public class ControllerLogin {
         String resultado = usuarioService.logout(token, motivo);
 
         if (resultado.contains("sucesso")) {
-            return ResponseEntity.ok(resultado);
+            return ResponseEntity.ok()
+                    .header(
+                            HttpHeaders.SET_COOKIE,
+                            jwtCookieService.montarCookieRemocao()
+                    )
+                    .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                    .body(resultado);
         }
 
         if (resultado.contains("inválido")
                 || resultado.contains("expirado")) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
+                    .header(
+                            HttpHeaders.SET_COOKIE,
+                            jwtCookieService.montarCookieRemocao()
+                    )
                     .body(resultado);
         }
 

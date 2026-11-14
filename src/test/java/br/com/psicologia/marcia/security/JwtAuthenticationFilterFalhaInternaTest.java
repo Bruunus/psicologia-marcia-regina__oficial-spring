@@ -61,7 +61,8 @@ class JwtAuthenticationFilterFalhaInternaTest {
                 tokenService,
                 usuarioService,
                 analyticsService,
-                suporteAnalytics
+                suporteAnalytics,
+                org.mockito.Mockito.mock(JwtCookieService.class)
         );
 
         login = "teste-" + UUID.randomUUID();

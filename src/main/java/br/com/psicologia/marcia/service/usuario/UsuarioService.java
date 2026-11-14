@@ -1,8 +1,6 @@
 package br.com.psicologia.marcia.service.usuario;
 
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import br.com.psicologia.marcia.DTO.autenticacao.AccessUserManagerRecord;
-import br.com.psicologia.marcia.DTO.usuario.UsuarioRedefinirSenha;
 import br.com.psicologia.marcia.model.Usuario;
 import br.com.psicologia.marcia.repository.usuario.UsuarioRepository;
 import br.com.psicologia.marcia.security.TokenService;
@@ -82,35 +79,6 @@ public class UsuarioService implements UserDetailsService {
     }
 
     /**
-     * Redefine a senha após conferir o CPF e a confirmação da senha.
-     */
-    public boolean redefinirSenhaPorCpf(UsuarioRedefinirSenha request) {
-        List<Usuario> usuarios = usuarioRepository.findAll();
-
-        Optional<Usuario> optionalUsuario = usuarios.stream()
-                .filter(u -> passwordEncoder.matches(
-                        request.cpf(),
-                        u.getCpf()
-                ))
-                .findFirst();
-
-        if (optionalUsuario.isEmpty()) {
-            return false;
-        }
-
-        if (!request.novaSenha().equals(request.confirmacaoSenha())) {
-            return false;
-        }
-
-        Usuario usuario = optionalUsuario.get();
-
-        usuario.setSenha(passwordEncoder.encode(request.novaSenha()));
-        usuarioRepository.save(usuario);
-
-        return true;
-    }
-
-    /**
      * Carrega os dados utilizados na autenticação do usuário.
      */
     @Override
@@ -136,22 +104,6 @@ public class UsuarioService implements UserDetailsService {
         return findBylogin;
     }
 
-    /**
-     * Deleta um usuário pelo login e ID.
-     */
-    public void deletarUsuarioPorLoginEId(String login, Long id) {
-        Optional<Usuario> usuarioOptional =
-                usuarioRepository.findByLoginAndId(login, id);
-
-        if (usuarioOptional.isPresent()) {
-            usuarioRepository.delete(usuarioOptional.get());
-        } else {
-            throw new NoSuchElementException(
-                    "Usuário não encontrado com login: "
-                    + login + " e id: " + id
-            );
-        }
-    }
 
     /**
      * @return true quando o login NÃO está cadastrado.
@@ -262,18 +214,4 @@ public class UsuarioService implements UserDetailsService {
         return new AccessUserManagerRecord(login);
     }
 
-    /**
-     * Exclui um usuário pelo login e ID.
-     */
-    public boolean deletarUsuario(String login, Long id) {
-        Optional<Usuario> usuarioOptional =
-                usuarioRepository.findByIdAndLogin(id, login);
-
-        if (usuarioOptional.isPresent()) {
-            usuarioRepository.delete(usuarioOptional.get());
-            return true;
-        }
-
-        return false;
-    }
 }

@@ -1,0 +1,118 @@
+package br.com.psicologia.marcia.service.usuario;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import br.com.psicologia.marcia.model.ConviteUsuario;
+import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.repository.usuario.ConviteUsuarioRepository;
+
+@Service
+public class UsuarioConviteTokenService {
+
+    private static final long TEMPO_EXPIRACAO_MINUTOS = 30;
+
+    private final ConviteUsuarioRepository conviteUsuarioRepository;
+
+    public UsuarioConviteTokenService(ConviteUsuarioRepository conviteUsuarioRepository) {
+        this.conviteUsuarioRepository = conviteUsuarioRepository;
+    }
+
+    /**
+     * Gera um novo token de convite para o usuário informado.
+     * Antes de criar o novo token, invalida os convites anteriores ainda não utilizados.
+     *
+     * @param usuario usuário que receberá o convite
+     * @return convite criado com token e validade de 30 minutos
+     */
+    @Transactional
+    public ConviteUsuario gerarNovoConvite(Usuario usuario) {
+        invalidarConvitesPendentes(usuario);
+
+        ConviteUsuario convite = new ConviteUsuario();
+
+        convite.setUsuario(usuario);
+        convite.setToken(gerarTokenSeguro());
+        convite.setCriadoEm(LocalDateTime.now());
+        convite.setExpiraEm(LocalDateTime.now().plusMinutes(TEMPO_EXPIRACAO_MINUTOS));
+        convite.setUtilizado(false);
+
+        return conviteUsuarioRepository.save(convite);
+    }
+
+    /**
+     * Busca um convite pelo token recebido.
+     *
+     * @param token token enviado no link do e-mail
+     * @return convite encontrado, se existir
+     */
+    public Optional<ConviteUsuario> buscarPorToken(String token) {
+        return conviteUsuarioRepository.findByToken(token);
+    }
+
+    /**
+     * Consulta o token com bloqueio pessimista.
+     * Deve ser chamado dentro de uma transação de escrita.
+     */
+    public Optional<ConviteUsuario> buscarPorTokenComBloqueio(String token) {
+        return conviteUsuarioRepository.findByTokenComBloqueio(token);
+    }
+
+    /**
+     * Verifica se o convite ainda pode ser usado.
+     *
+     * @param convite convite que será validado
+     * @return true quando o convite não foi usado e ainda não expirou
+     */
+    public boolean conviteEstaValido(ConviteUsuario convite) {
+        if (convite == null) {
+            return false;
+        }
+
+        if (convite.isUtilizado()) {
+            return false;
+        }
+
+        return convite.getExpiraEm().isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * Marca o convite como utilizado.
+     *
+     * @param convite convite que acabou de ser usado
+     */
+    @Transactional
+    public void marcarComoUtilizado(ConviteUsuario convite) {
+        convite.setUtilizado(true);
+        convite.setUtilizadoEm(LocalDateTime.now());
+
+        conviteUsuarioRepository.save(convite);
+    }
+
+    /**
+     * Invalida convites anteriores ainda não utilizados do mesmo usuário.
+     *
+     * @param usuario usuário que terá convites pendentes invalidados
+     */
+    @Transactional
+    public void invalidarConvitesPendentes(Usuario usuario) {
+        List<ConviteUsuario> convitesPendentes = conviteUsuarioRepository.findByUsuarioAndUtilizadoFalse(usuario);
+
+        for (ConviteUsuario convite : convitesPendentes) {
+            convite.setUtilizado(true);
+            convite.setUtilizadoEm(LocalDateTime.now());
+        }
+
+        conviteUsuarioRepository.saveAll(convitesPendentes);
+    }
+
+    private String gerarTokenSeguro() {
+        return UUID.randomUUID().toString();
+    }
+
+}

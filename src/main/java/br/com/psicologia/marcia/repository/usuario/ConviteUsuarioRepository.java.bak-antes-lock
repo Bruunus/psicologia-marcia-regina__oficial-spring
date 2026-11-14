@@ -1,0 +1,19 @@
+package br.com.psicologia.marcia.repository.usuario;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import br.com.psicologia.marcia.model.ConviteUsuario;
+import br.com.psicologia.marcia.model.Usuario;
+
+@Repository
+public interface ConviteUsuarioRepository extends JpaRepository<ConviteUsuario, Long> {
+
+    Optional<ConviteUsuario> findByToken(String token);
+
+    List<ConviteUsuario> findByUsuarioAndUtilizadoFalse(Usuario usuario);
+
+}

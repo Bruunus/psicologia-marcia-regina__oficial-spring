@@ -82,6 +82,18 @@ public class TokenStore {
     }
 
     /**
+     * Consulta a sessão registrada pelo login.
+     * Uso interno para invalidação administrativa.
+     */
+    public static SessaoRegistrada obterSessaoPorLogin(String login) {
+        if (login == null || login.isBlank()) {
+            return null;
+        }
+
+        return sessoes.get(login);
+    }
+
+    /**
      * Recupera a sessão somente se o token recebido corresponder
      * ao token registrado para o usuário.
      *

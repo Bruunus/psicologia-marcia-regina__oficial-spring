@@ -1,5 +1,8 @@
 package br.com.psicologia.marcia.security;
 
+import br.com.psicologia.marcia.error.ApiErrorResponse;
+import org.springframework.http.HttpStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -14,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import br.com.psicologia.marcia.model.Analitics;
 import br.com.psicologia.marcia.model.Usuario;
+import br.com.psicologia.marcia.model.enums.StatusUsuario;
 import br.com.psicologia.marcia.service.analytics.RequisicaoAnaliticaService;
 import br.com.psicologia.marcia.service.analytics.StatusCapturingResponseWrapper;
 import br.com.psicologia.marcia.service.analytics.SuporteAnalytics;
@@ -35,6 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenService tokenService;
     private final UsuarioService usuarioService;
+    private final JwtCookieService jwtCookieService;
 
     @Autowired
     private RequisicaoAnaliticaService requisicaoAnaliticaService;
@@ -46,10 +51,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             TokenService tokenService,
             UsuarioService usuarioService,
             RequisicaoAnaliticaService requisicaoAnaliticaService,
-            SuporteAnalytics suporteAnalytics) {
+            SuporteAnalytics suporteAnalytics,
+            JwtCookieService jwtCookieService) {
 
         this.tokenService = tokenService;
         this.usuarioService = usuarioService;
+        this.jwtCookieService = jwtCookieService;
         this.requisicaoAnaliticaService = requisicaoAnaliticaService;
         this.suporteAnalytics = suporteAnalytics;
     }
@@ -80,10 +87,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Ignora rotas públicas da API.
-        if (uri.equals("/api/edit/user/redefinir-senha")
+        if (uri.equals("/api/auth/csrf")
+                || uri.equals("/api/edit/user/redefinir-senha")
                 || uri.equals("/api/edit/user/register")
                 || uri.equals("/api/auth/login")
-                || uri.equals("/api/auth/deslogar")) {
+                || uri.equals("/api/auth/deslogar")
+                || uri.equals("/api/usuarios/convites/validar-token")
+                || uri.equals("/api/usuarios/convites/definir-senha")
+                || uri.equals("/api/usuarios/redefinicoes-senha/validar-token")
+                || uri.equals("/api/usuarios/redefinicoes-senha/confirmar")) {
 
             System.out.println(
                     "[INTERCEPTOR] Ignorando requisição pública da API: "
@@ -144,6 +156,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Usuario usuario =
                     (Usuario) usuarioService.loadUserByUsername(login);
+
+            StatusUsuario statusUsuario = usuario.getStatusUsuario();
+
+            if (statusUsuario == StatusUsuario.INATIVO
+                    || statusUsuario == StatusUsuario.PENDENTE_DE_SENHA) {
+                responderErro(
+                        response,
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Conta inativa ou pendente de ativação."
+                );
+                return;
+            }
 
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
@@ -263,22 +287,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         SecurityContextHolder.clearContext();
 
+        final HttpStatus httpStatus = HttpStatus.valueOf(status);
+
+        final String codigo = status == HttpServletResponse.SC_UNAUTHORIZED
+                ? "sessao_invalida"
+                : "falha_validacao_sessao";
+
+        final String mensagemPublica =
+                status == HttpServletResponse.SC_UNAUTHORIZED
+                ? "Sua sessão é inválida ou expirou. Faça login novamente."
+                : "Não foi possível validar a sessão. Tente novamente.";
+
         response.setStatus(status);
-        response.setContentType("text/plain");
+        response.setContentType("application/json");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(mensagem);
+
+        new ObjectMapper().writeValue(
+                response.getWriter(),
+                ApiErrorResponse.criar(
+                        httpStatus,
+                        codigo,
+                        mensagemPublica
+                )
+        );
     }
 
-    /**
-     * Recupera o token Bearer do cabeçalho Authorization.
-     */
+    /** Le exclusivamente o JWT do cookie HttpOnly. */
     private String recuperarToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7).trim();
-        }
-
-        return null;
+        return jwtCookieService.lerToken(request);
     }
 }

@@ -1,0 +1,113 @@
+package br.com.psicologia.marcia.controller.usuario;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.psicologia.marcia.DTO.usuario.RedefinirSenhaRequest;
+import br.com.psicologia.marcia.DTO.usuario.SolicitarRedefinicaoSenhaResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioPerfilRequest;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioResumoResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioStatusRequest;
+import br.com.psicologia.marcia.DTO.usuario.ValidarTokenConviteResponse;
+import br.com.psicologia.marcia.service.usuario.UsuarioAdministracaoException;
+import br.com.psicologia.marcia.service.usuario.UsuarioAdministracaoService;
+import jakarta.validation.Valid;
+
+@RestController
+public class UsuarioAdministracaoController {
+
+    private final UsuarioAdministracaoService usuarioAdministracaoService;
+
+    public UsuarioAdministracaoController(UsuarioAdministracaoService usuarioAdministracaoService) {
+        this.usuarioAdministracaoService = usuarioAdministracaoService;
+    }
+
+    @GetMapping("/api/usuarios")
+    public ResponseEntity<List<UsuarioResumoResponse>> listarUsuarios() {
+        List<UsuarioResumoResponse> usuarios = usuarioAdministracaoService.listarUsuarios();
+
+        return ResponseEntity.ok(usuarios);
+    }
+
+    @PatchMapping("/api/usuarios/{idUsuario}/status")
+    public ResponseEntity<UsuarioResumoResponse> atualizarStatus(
+        @PathVariable Long idUsuario,
+        @Valid @RequestBody UsuarioStatusRequest request,
+        Authentication authentication
+    ) {
+        String loginAdministradorAutenticado = authentication.getName();
+
+        UsuarioResumoResponse response = usuarioAdministracaoService.atualizarStatus(
+            idUsuario,
+            request,
+            loginAdministradorAutenticado
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/api/usuarios/{idUsuario}/perfil")
+    public ResponseEntity<UsuarioResumoResponse> atualizarPerfil(
+        @PathVariable Long idUsuario,
+        @Valid @RequestBody UsuarioPerfilRequest request,
+        Authentication authentication
+    ) {
+        String loginAdministradorAutenticado = authentication.getName();
+
+        UsuarioResumoResponse response = usuarioAdministracaoService.atualizarPerfil(
+            idUsuario,
+            request,
+            loginAdministradorAutenticado
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/usuarios/{idUsuario}/redefinir-senha")
+    public ResponseEntity<SolicitarRedefinicaoSenhaResponse> solicitarRedefinicaoSenha(
+        @PathVariable Long idUsuario
+    ) {
+        SolicitarRedefinicaoSenhaResponse response = usuarioAdministracaoService
+            .solicitarRedefinicaoSenha(idUsuario);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/usuarios/redefinicoes-senha/validar-token")
+    public ResponseEntity<ValidarTokenConviteResponse> validarTokenRedefinicaoSenha(
+        @RequestParam String token
+    ) {
+        ValidarTokenConviteResponse response = usuarioAdministracaoService
+            .validarTokenRedefinicaoSenha(token);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/usuarios/redefinicoes-senha/confirmar")
+    public ResponseEntity<String> confirmarRedefinicaoSenha(
+        @Valid @RequestBody RedefinirSenhaRequest request
+    ) {
+        usuarioAdministracaoService.confirmarRedefinicaoSenha(request);
+
+        return ResponseEntity.ok("senha_redefinida_com_sucesso");
+    }
+
+    @ExceptionHandler(UsuarioAdministracaoException.class)
+    public ResponseEntity<String> tratarUsuarioAdministracaoException(
+        UsuarioAdministracaoException exception
+    ) {
+        return ResponseEntity
+            .status(exception.getStatus())
+            .body(exception.getMessage());
+    }
+}

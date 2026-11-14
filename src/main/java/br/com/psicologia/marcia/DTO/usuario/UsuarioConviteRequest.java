@@ -1,0 +1,47 @@
+package br.com.psicologia.marcia.DTO.usuario;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.br.CPF;
+
+public class UsuarioConviteRequest {
+
+    @NotBlank
+    @Size(min = 3, max = 50)
+    private String login;
+
+    @NotBlank
+    @Email
+    @Size(max = 120)
+    private String email;
+
+    @NotBlank
+    private String role;
+
+    @NotBlank(message = "cpf_obrigatorio")
+    @Pattern(
+        regexp = "^[0-9]{11}$",
+        message = "cpf_deve_conter_11_digitos"
+    )
+    @CPF(message = "cpf_invalido")
+    private String cpf;
+
+    public String getLogin() {
+        return login;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+}

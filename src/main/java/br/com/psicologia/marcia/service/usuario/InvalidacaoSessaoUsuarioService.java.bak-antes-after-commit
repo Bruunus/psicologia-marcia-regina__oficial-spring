@@ -1,0 +1,43 @@
+package br.com.psicologia.marcia.service.usuario;
+
+import org.springframework.stereotype.Service;
+
+import br.com.psicologia.marcia.security.TokenStore;
+
+@Service
+public class InvalidacaoSessaoUsuarioService {
+
+    private final AuditoriaDeSessaoDeUsuarioService auditoriaService;
+
+    public InvalidacaoSessaoUsuarioService(
+            AuditoriaDeSessaoDeUsuarioService auditoriaService) {
+        this.auditoriaService = auditoriaService;
+    }
+
+    /**
+     * Encerra a sessão atualmente registrada para o login.
+     * Deve ser chamado após a confirmação da alteração no banco.
+     */
+    public void invalidarSessao(String login, String token, Long auditoriaId, String motivo) {
+        if (login == null || token == null || auditoriaId == null) {
+            return;
+        }
+
+        synchronized (TokenStore.class) {
+            TokenStore.SessaoRegistrada sessao =
+                    TokenStore.obterSessao(login, token);
+
+            if (sessao == null || !auditoriaId.equals(sessao.auditoriaId())) {
+                return;
+            }
+
+            auditoriaService.registrarLogoutDaSessao(
+                    auditoriaId,
+                    login,
+                    motivo
+            );
+
+            TokenStore.removerToken(login, token);
+        }
+    }
+}

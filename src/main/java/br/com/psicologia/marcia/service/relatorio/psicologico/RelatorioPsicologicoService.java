@@ -1,5 +1,8 @@
 package br.com.psicologia.marcia.service.relatorio.psicologico;
 
+import org.springframework.http.HttpStatus;
+import br.com.psicologia.marcia.error.ApiNegocioException;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +29,11 @@ public class RelatorioPsicologicoService {
     @Transactional
     public RelatorioPsicologicoResponse salvar(RelatorioPsicologicoRequest request) {
         Paciente paciente = readPacienteRepository.findById(request.pacienteId())
-                .orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+                .orElseThrow(() -> new ApiNegocioException(
+                    HttpStatus.NOT_FOUND,
+                    "paciente_nao_encontrado",
+                    "Paciente não encontrado."
+            ));
 
         RelatorioPsicologico relatorio = new RelatorioPsicologico();
 
@@ -51,7 +58,11 @@ public class RelatorioPsicologicoService {
         }
 
         if (relatorio.getHipotesesDiagnosticas().isEmpty()) {
-            throw new RuntimeException("Informe pelo menos uma hipótese diagnóstica válida");
+            throw new ApiNegocioException(
+                    HttpStatus.BAD_REQUEST,
+                    "hipoteses_diagnosticas_invalidas",
+                    "Informe pelo menos uma hipótese diagnóstica válida."
+            );
         }
 
         RelatorioPsicologico relatorioSalvo = relatorioPsicologicoRepository.save(relatorio);
@@ -69,7 +80,11 @@ public class RelatorioPsicologicoService {
 
     public RelatorioPsicologicoResponse buscarPorId(Long relatorioId) {
         RelatorioPsicologico relatorio = relatorioPsicologicoRepository.findById(relatorioId)
-                .orElseThrow(() -> new RuntimeException("Relatório psicológico não encontrado"));
+                .orElseThrow(() -> new ApiNegocioException(
+                    HttpStatus.NOT_FOUND,
+                    "relatorio_psicologico_nao_encontrado",
+                    "Relatório psicológico não encontrado."
+            ));
 
         return converterParaResponse(relatorio);
     }

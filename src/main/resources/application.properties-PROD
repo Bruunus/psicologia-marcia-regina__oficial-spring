@@ -1,33 +1,10 @@
+DB_URL=jdbc:mariadb://NOME_DO_CONTAINER:3306/NOME_DO_BANCO
+DB_USER=USUARIO_DO_BANCO
+DB_PASS=SENHA_DO_BANCO
 
-# DEV
-spring.application.name=psicologia-marcia-regina__oficial-spring
-spring.datasource.url=jdbc:mariadb://localhost:3306/psicologia_marcia_test
-spring.datasource.username=root
-spring.datasource.password=root
-spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+JWT_SECRET=SEGREDO_FORTE_E_ALEATORIO
 
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.properties.hibernate.show_sql=true
-#spring.jpa.properties.hibernate.format_sql=true
+SMTP_USER=EMAIL_REMETENTE
+SMTP_PASSWORD=SENHA_DE_APLICATIVO_DO_GMAIL
 
-
-
-
-
-
-api.security.token.secret=${JWT_SECRET:12345678901234567890123456789012}
-
-
-# 30 minutos em milissegundos
-jwt.expiracao=7200000
-
-
-# ==========================================
-# ANEXOS DE DOCUMENTOS - MODULO ARQUIVO
-# ==========================================
-
-# Tamanho maximo permitido por arquivo
-spring.servlet.multipart.max-file-size=10MB
-
-# Tamanho maximo da requisicao multipart
-spring.servlet.multipart.max-request-size=12MB
+SPRING_PROFILES_ACTIVE=prod

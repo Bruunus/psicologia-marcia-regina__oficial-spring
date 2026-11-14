@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.psicologia.marcia.DTO.paciente.PacienteRecord;
+import br.com.psicologia.marcia.error.ApiErrorResponse;
 import br.com.psicologia.marcia.service.paciente.CreatePacienteService;
 import jakarta.validation.Valid;
 
@@ -36,13 +37,21 @@ public class CreateControllerPaciente {
 						.body(Collections.singletonMap("message", "Cadastro realizado com sucesso"));
 			} else if(cadastro == 409) {
 				return ResponseEntity.status(HttpStatus.CONFLICT)
-						.body(Collections.singletonMap("message", "CPF já cadastrado no sistema"));
+						.body(ApiErrorResponse.criar(
+    HttpStatus.CONFLICT,
+    "cpf_ja_cadastrado",
+    "CPF já cadastrado no sistema."
+));
 			} else {
 				throw new RuntimeException();			}
 		} catch (RuntimeException e) {
 			System.err.println("Erro no cadastro de paciente: " + e.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-			.body(Collections.singletonMap("message", "Erro interno ao realizar cadastro"));
+			.body(ApiErrorResponse.criar(
+    HttpStatus.INTERNAL_SERVER_ERROR,
+    "erro_interno_cadastro",
+    "Não foi possível cadastrar o paciente. Tente novamente."
+));
 		}
 		
 //		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

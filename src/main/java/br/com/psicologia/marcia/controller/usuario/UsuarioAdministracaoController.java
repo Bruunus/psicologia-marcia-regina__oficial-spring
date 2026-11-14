@@ -1,0 +1,122 @@
+package br.com.psicologia.marcia.controller.usuario;
+
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import br.com.psicologia.marcia.DTO.usuario.RedefinirSenhaRequest;
+import br.com.psicologia.marcia.DTO.usuario.SolicitarRedefinicaoSenhaResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioPerfilRequest;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioResumoResponse;
+import br.com.psicologia.marcia.DTO.usuario.UsuarioStatusRequest;
+import br.com.psicologia.marcia.DTO.usuario.ValidarTokenConviteResponse;
+import br.com.psicologia.marcia.service.usuario.UsuarioAdministracaoService;
+import jakarta.validation.Valid;
+
+@RestController
+public class UsuarioAdministracaoController {
+
+    private final UsuarioAdministracaoService usuarioAdministracaoService;
+
+    public UsuarioAdministracaoController(UsuarioAdministracaoService usuarioAdministracaoService) {
+        this.usuarioAdministracaoService = usuarioAdministracaoService;
+    }
+
+    public record AtualizarStatusRequest(
+        @NotNull Long idUsuario,
+        @NotNull @Valid UsuarioStatusRequest dados
+    ) {}
+
+    public record AtualizarPerfilRequest(
+        @NotNull Long idUsuario,
+        @NotNull @Valid UsuarioPerfilRequest dados
+    ) {}
+
+    public record UsuarioIdRequest(
+        @NotNull Long idUsuario
+    ) {}
+
+    public record TokenRequest(
+        @NotBlank String token
+    ) {}
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/api/usuarios/listar")
+    public ResponseEntity<List<UsuarioResumoResponse>> listarUsuarios() {
+        List<UsuarioResumoResponse> usuarios = usuarioAdministracaoService.listarUsuarios();
+
+        return ResponseEntity.ok(usuarios);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/api/usuarios/atualizar-status")
+    public ResponseEntity<UsuarioResumoResponse> atualizarStatus(
+        @Valid @RequestBody AtualizarStatusRequest request,
+        Authentication authentication
+    ) {
+        String loginAdministradorAutenticado = authentication.getName();
+
+        UsuarioResumoResponse response = usuarioAdministracaoService.atualizarStatus(
+            request.idUsuario(),
+            request.dados(),
+            loginAdministradorAutenticado
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/api/usuarios/atualizar-perfil")
+    public ResponseEntity<UsuarioResumoResponse> atualizarPerfil(
+        @Valid @RequestBody AtualizarPerfilRequest request,
+        Authentication authentication
+    ) {
+        String loginAdministradorAutenticado = authentication.getName();
+
+        UsuarioResumoResponse response = usuarioAdministracaoService.atualizarPerfil(
+            request.idUsuario(),
+            request.dados(),
+            loginAdministradorAutenticado
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @PostMapping("/api/usuarios/redefinicoes-senha/solicitar")
+    public ResponseEntity<SolicitarRedefinicaoSenhaResponse> solicitarRedefinicaoSenha(
+        @Valid @RequestBody UsuarioIdRequest request
+    ) {
+        SolicitarRedefinicaoSenhaResponse response = usuarioAdministracaoService
+            .solicitarRedefinicaoSenha(request.idUsuario());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/usuarios/redefinicoes-senha/validar-token")
+    public ResponseEntity<ValidarTokenConviteResponse> validarTokenRedefinicaoSenha(
+        @Valid @RequestBody TokenRequest request
+    ) {
+        ValidarTokenConviteResponse response = usuarioAdministracaoService
+            .validarTokenRedefinicaoSenha(request.token());
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/usuarios/redefinicoes-senha/confirmar")
+    public ResponseEntity<String> confirmarRedefinicaoSenha(
+        @Valid @RequestBody RedefinirSenhaRequest request
+    ) {
+        usuarioAdministracaoService.confirmarRedefinicaoSenha(request);
+
+        return ResponseEntity.ok("senha_redefinida_com_sucesso");
+    }
+
+}
