@@ -1,5 +1,11 @@
 package br.com.psicologia.marcia.security;
 
+import java.nio.charset.StandardCharsets;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.csrf.CsrfException;
+import br.com.psicologia.marcia.error.ApiErrorResponse;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -109,6 +115,33 @@ public class SecurityConfigurations {
 
                         // Qualquer outra rota precisa de autenticação
                         .anyRequest().authenticated()
+                )
+
+                // Padroniza respostas HTTP 403 sem invalidar a sessão JWT.
+                .exceptionHandling(excecoes -> excecoes
+                        .accessDeniedHandler((request, response, erro) -> {
+
+                            boolean erroCsrf = erro instanceof CsrfException;
+
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding(
+                                    StandardCharsets.UTF_8.name()
+                            );
+
+                            ApiErrorResponse resposta = ApiErrorResponse.criar(
+                                    HttpStatus.FORBIDDEN,
+                                    erroCsrf ? "csrf_invalido" : "acesso_negado",
+                                    erroCsrf
+                                            ? "Não foi possível validar a segurança da requisição."
+                                            : "Você não possui permissão para acessar este recurso."
+                            );
+
+                            new ObjectMapper().writeValue(
+                                    response.getWriter(),
+                                    resposta
+                            );
+                        })
                 )
 
                 // Adiciona filtro JWT antes do filtro padrão de autenticação

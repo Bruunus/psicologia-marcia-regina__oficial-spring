@@ -298,6 +298,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 ? "Sua sessão é inválida ou expirou. Faça login novamente."
                 : "Não foi possível validar a sessão. Tente novamente.";
 
+        // Remove o cookie apenas quando a sessão é inválida.
+        // Falhas HTTP 500 não devem encerrar a sessão.
+        if (status == HttpServletResponse.SC_UNAUTHORIZED) {
+            response.addHeader(
+                    "Set-Cookie",
+                    jwtCookieService.montarCookieRemocao()
+            );
+        }
+
+        // Impede armazenamento de respostas de autenticação.
+        response.setHeader("Cache-Control", "no-store");
+
         response.setStatus(status);
         response.setContentType("application/json");
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
