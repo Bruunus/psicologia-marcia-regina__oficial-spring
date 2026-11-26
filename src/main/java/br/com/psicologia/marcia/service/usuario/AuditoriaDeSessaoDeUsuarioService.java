@@ -63,30 +63,7 @@ public class AuditoriaDeSessaoDeUsuarioService {
      * ou, na ausência deles, o endereço remoto da requisição.
      */
     public String capturarIpCliente(HttpServletRequest request) {
-        String[] headers = {
-                "X-Forwarded-For",
-                "Proxy-Client-IP",
-                "WL-Proxy-Client-IP",
-                "HTTP_X_FORWARDED_FOR",
-                "HTTP_X_FORWARDED",
-                "HTTP_X_CLUSTER_CLIENT_IP",
-                "HTTP_CLIENT_IP",
-                "HTTP_FORWARDED_FOR",
-                "HTTP_FORWARDED",
-                "HTTP_VIA",
-                "REMOTE_ADDR"
-        };
-
-        for (String header : headers) {
-            String ip = request.getHeader(header);
-
-            if (ip != null
-                    && !ip.isEmpty()
-                    && !"unknown".equalsIgnoreCase(ip)) {
-                return ip.split(",")[0].trim();
-            }
-        }
-
+        // Não confiar em cabeçalhos informados pelo cliente.
         String ip = request.getRemoteAddr();
 
         if ("0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip)) {

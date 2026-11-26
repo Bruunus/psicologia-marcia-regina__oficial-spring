@@ -36,7 +36,6 @@ public class UsuarioService implements UserDetailsService {
     @Autowired
     private MessageError messageError;
 
-    private static Usuario usuario = new Usuario();
 
     private AccessUserManagerRecord login;
 
@@ -85,7 +84,6 @@ public class UsuarioService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) {
         System.out.println("LOGIN RECEBIDO: " + username);
 
-        UsuarioService.usuario.setLogin(username);
 
         UserDetails findBylogin =
                 usuarioRepository.findBylogin(username);
@@ -167,10 +165,6 @@ public class UsuarioService implements UserDetailsService {
                         + "O token informado já não possui sessão ativa.";
             }
 
-            if (sessao.auditoriaId() == null) {
-                return "Erro interno: sessão sem vínculo com a auditoria.";
-            }
-
             MotivoLogout motivoRecebido = motivoSolicitado != null
                     ? motivoSolicitado
                     : MotivoLogout.LOGOUT_MANUAL;
@@ -179,33 +173,37 @@ public class UsuarioService implements UserDetailsService {
                     ? "TOKEN_EXPIRADO"
                     : motivoRecebido.name();
 
-            try {
-                /*
-                 * Persiste o encerramento antes de remover o vínculo
-                 * em memória. Se o banco falhar, o vínculo permanece
-                 * disponível para uma nova tentativa de logout.
-                 *
-                 * Token vencido continua bloqueado nas rotas protegidas,
-                 * independentemente desta operação.
-                 */
-                auditoriaService.registrarLogoutDaSessao(
-                        sessao.auditoriaId(),
-                        dadosToken.login(),
-                        motivo
-                );
+            boolean auditoriaConfirmada = false;
 
-                // Remove exclusivamente o token recebido.
+            try {
+                if (sessao.auditoriaId() != null) {
+                    auditoriaConfirmada =
+                            auditoriaService.registrarLogoutDaSessao(
+                                    sessao.auditoriaId(),
+                                    dadosToken.login(),
+                                    motivo
+                            );
+                }
+            } catch (Exception e) {
+                System.err.println(
+                        "[Sessão] Falha na auditoria de logout: "
+                        + e.getClass().getSimpleName()
+                );
+            } finally {
+                // Revoga a sessão mesmo se a auditoria falhar.
                 TokenStore.removerToken(
                         dadosToken.login(),
                         tokenJWT
                 );
-
-                return "Logout efetuado com sucesso.";
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                return "Erro interno ao concluir logout.";
             }
+
+            if (!auditoriaConfirmada) {
+                System.err.println(
+                        "[Sessão] Token revogado; auditoria não confirmada."
+                );
+            }
+
+            return "Logout efetuado com sucesso.";
         }
     }
 

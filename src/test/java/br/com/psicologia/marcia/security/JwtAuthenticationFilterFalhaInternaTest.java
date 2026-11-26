@@ -7,6 +7,8 @@ import static org.mockito.Mockito.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
+import jakarta.servlet.http.Cookie;
+import br.com.psicologia.marcia.model.enums.StatusUsuario;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +64,7 @@ class JwtAuthenticationFilterFalhaInternaTest {
                 usuarioService,
                 analyticsService,
                 suporteAnalytics,
-                org.mockito.Mockito.mock(JwtCookieService.class)
+                new JwtCookieService("psico_auth", false, "Lax", "/", 7200000L)
         );
 
         login = "teste-" + UUID.randomUUID();
@@ -86,6 +88,7 @@ class JwtAuthenticationFilterFalhaInternaTest {
 
         when(usuario.getUsername()).thenReturn(login);
         when(usuario.getAuthorities()).thenReturn(List.of());
+        when(usuario.getStatusUsuario()).thenReturn(StatusUsuario.ATIVO);
 
         /*
          * Primeira consulta: falha de infraestrutura.
@@ -111,10 +114,16 @@ class JwtAuthenticationFilterFalhaInternaTest {
 
         assertEquals(500, respostaFalha.getStatus());
 
-        assertEquals(
-                "Falha interna ao validar a sessão.",
-                respostaFalha.getContentAsString(StandardCharsets.UTF_8)
+        assertTrue(
+                respostaFalha.getContentType().startsWith("application/json")
         );
+
+        assertTrue(
+                respostaFalha.getContentAsString(StandardCharsets.UTF_8)
+                        .contains("falha_validacao_sessao")
+        );
+
+        assertNull(respostaFalha.getHeader("Set-Cookie"));
 
         assertEquals(
                 StandardCharsets.UTF_8.name(),
@@ -181,7 +190,7 @@ class JwtAuthenticationFilterFalhaInternaTest {
                 "/api/auth/validar-sessao"
         );
 
-        request.addHeader("Authorization", "Bearer " + token);
+        request.setCookies(new Cookie("psico_auth", token));
 
         return request;
     }

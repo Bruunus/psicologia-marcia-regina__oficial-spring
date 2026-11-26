@@ -152,8 +152,7 @@ public class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return statusUsuario == null
-                || statusUsuario == StatusUsuario.ATIVO;
+        return statusUsuario == StatusUsuario.ATIVO;
     }
     
     

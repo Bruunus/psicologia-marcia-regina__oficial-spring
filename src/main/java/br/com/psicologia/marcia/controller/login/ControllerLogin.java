@@ -99,6 +99,13 @@ public class ControllerLogin {
                 String token = tokenService.gerarToken(login);
                 String cookieJwt = jwtCookieService.montarCookie(token);
 
+                // Prepara os dados antes de registrar a sessão.
+                RespostaSessao respostaSessao = new RespostaSessao(
+                        login,
+                        perfil,
+                        tokenService.getExpiracaoEmMs(token)
+                );
+
                 // Primeiro persiste a auditoria e obtém seu ID.
                 Long auditoriaId =
                         auditoriaService.registrarLogin(login, request);
@@ -109,7 +116,7 @@ public class ControllerLogin {
                 return ResponseEntity.ok()
                         .header(HttpHeaders.SET_COOKIE, cookieJwt)
                         .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                        .body(new RespostaSessao(login, perfil, tokenService.getExpiracaoEmMs(token)));
+                        .body(respostaSessao);
             }
 
         } catch (DisabledException e) {

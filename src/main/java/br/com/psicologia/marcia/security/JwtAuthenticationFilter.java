@@ -159,8 +159,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             StatusUsuario statusUsuario = usuario.getStatusUsuario();
 
-            if (statusUsuario == StatusUsuario.INATIVO
-                    || statusUsuario == StatusUsuario.PENDENTE_DE_SENHA) {
+            if (statusUsuario != StatusUsuario.ATIVO) {
                 responderErro(
                         response,
                         HttpServletResponse.SC_UNAUTHORIZED,
