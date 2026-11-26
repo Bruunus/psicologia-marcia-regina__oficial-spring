@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.relatorio.psicologico.RelatorioPsicologicoRequest;
@@ -25,6 +26,9 @@ public class RelatorioPsicologicoService {
 
     @Autowired
     private ReadPacienteRepository readPacienteRepository;
+
+    @Autowired
+    private AtendimentoInicioService atendimentoInicioService;
 
     @Transactional
     public RelatorioPsicologicoResponse salvar(RelatorioPsicologicoRequest request) {
@@ -66,6 +70,8 @@ public class RelatorioPsicologicoService {
         }
 
         RelatorioPsicologico relatorioSalvo = relatorioPsicologicoRepository.save(relatorio);
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 
         return converterParaResponse(relatorioSalvo);
     }

@@ -1,6 +1,7 @@
 package br.com.psicologia.marcia.service.paciente;
 
 import java.time.LocalDate;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,9 @@ public class UpdatePacienteService {
 	
 	@Autowired
 	private AtendimentoRepository atendimentoRepository;
+
+    @Autowired
+    private AtendimentoInicioService atendimentoInicioService;
 	
 	@Autowired
 	private EnderecoRepository enderecoRepository;
@@ -61,9 +65,9 @@ public class UpdatePacienteService {
 		paciente.setProfissao(pacienteUpdateRecord.profissao());
 		
 		
-		Atendimento pre_atendimento = new Atendimento();
-		
-		pre_atendimento.setId(pacienteUpdateRecord.id());
+		Atendimento pre_atendimento = atendimentoRepository
+                .findFirstByPaciente_IdOrderByIdDesc(paciente.getId())
+                .orElseGet(Atendimento::new);
 		pre_atendimento.setDataUltimoAtendimento(LocalDate.now());
 		pre_atendimento.setPaciente(paciente);
 		
@@ -93,6 +97,8 @@ public class UpdatePacienteService {
 		updatePacienteRepository.save(paciente);
 		
 		pre_atendimento = atendimentoRepository.save(pre_atendimento);
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 		
 
 		return new PacienteUpdateRecord(

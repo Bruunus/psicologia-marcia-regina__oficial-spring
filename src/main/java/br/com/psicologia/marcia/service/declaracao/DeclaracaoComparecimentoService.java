@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -24,14 +25,17 @@ public class DeclaracaoComparecimentoService {
 
     private final DeclaracaoComparecimentoRepository declaracaoComparecimentoRepository;
     private final UpdatePacienteRepository pacienteRepository;
+    private final AtendimentoInicioService atendimentoInicioService;
 
     public DeclaracaoComparecimentoService(
             DeclaracaoComparecimentoRepository declaracaoComparecimentoRepository,
-            UpdatePacienteRepository pacienteRepository
+            UpdatePacienteRepository pacienteRepository,
+            AtendimentoInicioService atendimentoInicioService
     ) {
         this.declaracaoComparecimentoRepository =
                 declaracaoComparecimentoRepository;
         this.pacienteRepository = pacienteRepository;
+        this.atendimentoInicioService = atendimentoInicioService;
     }
 
     @Transactional
@@ -75,6 +79,8 @@ public class DeclaracaoComparecimentoService {
 
         DeclaracaoComparecimento declaracaoSalva =
                 declaracaoComparecimentoRepository.save(declaracao);
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 
         return montarResponse(declaracaoSalva);
     }

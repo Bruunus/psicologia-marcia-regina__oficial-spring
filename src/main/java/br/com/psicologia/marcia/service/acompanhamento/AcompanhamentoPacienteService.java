@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.acompanhamento.AcompanhamentoPacienteResponseDTO;
@@ -20,13 +21,16 @@ public class AcompanhamentoPacienteService {
 
     private final AcompanhamentoPacienteRepository acompanhamentoPacienteRepository;
     private final ReadPacienteRepository readPacienteRepository;
+    private final AtendimentoInicioService atendimentoInicioService;
 
     public AcompanhamentoPacienteService(
             AcompanhamentoPacienteRepository acompanhamentoPacienteRepository,
-            ReadPacienteRepository readPacienteRepository
+            ReadPacienteRepository readPacienteRepository,
+            AtendimentoInicioService atendimentoInicioService
     ) {
         this.acompanhamentoPacienteRepository = acompanhamentoPacienteRepository;
         this.readPacienteRepository = readPacienteRepository;
+        this.atendimentoInicioService = atendimentoInicioService;
     }
 
     @Transactional
@@ -49,6 +53,8 @@ public class AcompanhamentoPacienteService {
 
         AcompanhamentoPaciente acompanhamentoSalvo =
                 acompanhamentoPacienteRepository.save(acompanhamentoPaciente);
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 
         return new AcompanhamentoPacienteResponseDTO(acompanhamentoSalvo);
     }

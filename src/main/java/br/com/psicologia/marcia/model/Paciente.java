@@ -78,6 +78,14 @@ public class Paciente {
 	
 	@Column(name = "data_cadastro")
 	private LocalDate dataCadastro;
+
+    @Column(
+        name = "atendimento_iniciado",
+        nullable = false,
+        columnDefinition = "BOOLEAN DEFAULT FALSE"
+    )
+    private boolean atendimentoIniciado = false;
+
 	
 	
 	
@@ -323,5 +331,14 @@ public class Paciente {
 	
  
 	
+
+
+    public boolean isAtendimentoIniciado() {
+        return atendimentoIniciado;
+    }
+
+    public void setAtendimentoIniciado(boolean atendimentoIniciado) {
+        this.atendimentoIniciado = atendimentoIniciado;
+    }
 
 }

@@ -3,6 +3,7 @@ package br.com.psicologia.marcia.service.laudo;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.laudo.LaudoListaResponse;
@@ -21,10 +22,13 @@ public class LaudoService {
 
     private final ReadPacienteRepository readPacienteRepository;
 
+    private final AtendimentoInicioService atendimentoInicioService;
+
 
     public LaudoService(
         LaudoRepository laudoRepository,
-        ReadPacienteRepository readPacienteRepository
+        ReadPacienteRepository readPacienteRepository,
+        AtendimentoInicioService atendimentoInicioService
     ) {
 
         this.laudoRepository =
@@ -32,6 +36,9 @@ public class LaudoService {
 
         this.readPacienteRepository =
             readPacienteRepository;
+
+        this.atendimentoInicioService =
+            atendimentoInicioService;
     }
 
 
@@ -275,6 +282,8 @@ public class LaudoService {
                 laudo
             );
 
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 
         return converterParaResponse(
             laudoSalvo

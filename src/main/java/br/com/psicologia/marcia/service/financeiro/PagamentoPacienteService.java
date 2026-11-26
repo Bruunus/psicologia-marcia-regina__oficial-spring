@@ -17,6 +17,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,11 +31,17 @@ public class PagamentoPacienteService {
 
     private final PagamentoPacienteRepository pagamentoPacienteRepository;
 
+    private final AtendimentoInicioService atendimentoInicioService;
+
     @PersistenceContext
     private EntityManager entityManager;
 
-    public PagamentoPacienteService(PagamentoPacienteRepository pagamentoPacienteRepository) {
+    public PagamentoPacienteService(
+            PagamentoPacienteRepository pagamentoPacienteRepository,
+            AtendimentoInicioService atendimentoInicioService
+    ) {
         this.pagamentoPacienteRepository = pagamentoPacienteRepository;
+        this.atendimentoInicioService = atendimentoInicioService;
     }
 
     @Transactional
@@ -54,6 +61,8 @@ public class PagamentoPacienteService {
         pagamentoPaciente.setStatusDelete(StatusDelete.NAO_DELETADO);
 
         PagamentoPaciente pagamentoSalvo = pagamentoPacienteRepository.save(pagamentoPaciente);
+
+        atendimentoInicioService.registrarInicio(paciente.getId());
 
         return montarResponse(pagamentoSalvo);
     }

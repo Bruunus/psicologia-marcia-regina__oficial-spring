@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import br.com.psicologia.marcia.service.atendimento.AtendimentoInicioService;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.psicologia.marcia.DTO.agenda.AgendamentoCalendarioDiaResponse;
@@ -42,15 +43,22 @@ public class AgendamentoService {
     private final ReadPacienteRepository
         pacienteRepository;
 
+    private final AtendimentoInicioService
+        atendimentoInicioService;
+
     public AgendamentoService(
         AgendamentoRepository agendamentoRepository,
-        ReadPacienteRepository pacienteRepository
+        ReadPacienteRepository pacienteRepository,
+        AtendimentoInicioService atendimentoInicioService
     ) {
         this.agendamentoRepository =
             agendamentoRepository;
 
         this.pacienteRepository =
             pacienteRepository;
+
+        this.atendimentoInicioService =
+            atendimentoInicioService;
     }
 
     @Transactional(readOnly = true)
@@ -494,6 +502,12 @@ public class AgendamentoService {
         resultado.setQuantidadeSalva(
             agendamentosSalvos.size()
         );
+
+        if (!agendamentosSalvos.isEmpty()) {
+            atendimentoInicioService.registrarInicio(
+                paciente.getId()
+            );
+        }
 
         resultado.setAgendamentosSalvos(
             agendamentosSalvos
